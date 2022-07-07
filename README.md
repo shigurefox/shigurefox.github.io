@@ -1,0 +1,2 @@
+# shigurefox.github.io
+blog
