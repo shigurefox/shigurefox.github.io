@@ -196,8 +196,9 @@
                 <i class="far fa-calendar"></i>
               </span>
               <span class="post-meta-item-text">發表於</span>
+              
 
-              <time title="創建時間：2022-07-21 15:37:53" itemprop="dateCreated datePublished" datetime="2022-07-21T15:37:53+08:00">2022-07-21</time>
+              <time title="創建時間：2022-07-21 15:37:53 / 修改時間：15:59:01" itemprop="dateCreated datePublished" datetime="2022-07-21T15:37:53+08:00">2022-07-21</time>
             </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -235,17 +236,6 @@
 
       
           <p>本文示範如何在 Rocky Linux 於內部網路自行架設 GitLab 及 GitLab Runner 服務，並將 GitLab 加入 git remote，最後撰寫 <code>.gitlab-ci.yml</code>，透過 GitLab Runner 在 git push 時自動執行 CI 腳本。</p>
-<hr>
-<h2 id="設定-Host-環境"><a href="#設定-Host-環境" class="headerlink" title="設定 Host 環境"></a>設定 Host 環境</h2><h3 id="編輯-sshd-config"><a href="#編輯-sshd-config" class="headerlink" title="編輯 sshd_config"></a>編輯 <code>sshd_config</code></h3><p>透過編輯 <code>/etc/ssh/sshd_config</code> 檔案來更改 Host 系統使用的 <code>ssh</code> port，避免後續透過 <code>ssh</code> 與 GitLab 互動時會與系統衝突， <code>AddressFamily</code> 改為 <code>inet</code> 表示僅允許透過 ipv4 連線</p>
-<figure class="highlight diff"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="deletion">- Port 22</span></span><br><span class="line"><span class="addition">+ Port 2222</span></span><br><span class="line"><span class="deletion">- AddressFamily any</span></span><br><span class="line"><span class="addition">+ AddressFamily inet</span></span><br></pre></td></tr></table></figure>
-
-<ul>
-<li>可以先加上 port 2222，確定可以用 port 2222 進行 <code>ssh</code> 連線後，再刪除 port 22 這行</li>
-</ul>
-<p>接著透過 <code>semanage</code> 將 port 2222 加入 ssh 使用的 port 清單後重啟 sshd</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">semanage port -a -t ssh_port_t -p tcp 2222</span><br><span class="line">semanage port -l | grep ssh</span><br><span class="line">systemctl restart sshd</span><br></pre></td></tr></table></figure>
-
-<p>如果出現 <code>semanage: command not found</code> 錯誤，表示系統未安裝此工具程式，可透過以下指令安裝解決</p>
           <!--noindex-->
             <div class="post-button">
               <a class="btn" href="/2022/07/21/Rocky-Linux-GitLab-GitLab-Runner-GitLab-CI-%E5%BB%BA%E7%BD%AE%E6%95%99%E5%AD%B8/#more" rel="contents">
