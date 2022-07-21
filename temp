@@ -1,0 +1,72 @@
+SELECT
+    sales_ptn.name,
+    SUM(aml.price_total * (CASE WHEN amv.type='out_refund' THEN -1 ELSE 1 END))::money,
+    SUM(aml.price_subtotal * (CASE WHEN amv.type='out_refund' THEN -1 ELSE 1 END))::money,
+    SUM(
+        CASE
+            WHEN (tmpl.type='product' OR categ.complete_name LIKE '1-%') AND amv.type='out_refund' AND sol.price_unit = aml.price_unit
+            THEN (sol.purchase_price * aml.quantity * -1)
+            WHEN (tmpl.type='product' OR categ.complete_name LIKE '1-%') AND amv.type='out_invoice'
+            THEN (sol.purchase_price * aml.quantity)
+            ELSE 0
+        END)::money,
+    SUM(
+        CASE
+            WHEN tmpl.type='service' AND categ.complete_name LIKE '2-%' AND amv.type='out_refund' AND sol.price_unit = aml.price_unit
+            THEN (sol.purchase_price * aml.quantity * -1)
+            WHEN tmpl.type='service' AND categ.complete_name LIKE '2-%' AND amv.type='out_invoice'
+            THEN (sol.purchase_price * aml.quantity)
+            ELSE 0
+        END)::money,
+    SUM(
+        CASE
+            WHEN amv.type='out_refund' AND sol.price_unit = aml.price_unit
+            THEN (sol.purchase_price * aml.quantity * -1)
+            WHEN amv.type='out_invoice'
+            THEN (sol.purchase_price * aml.quantity)
+            ELSE 0
+        END)::money,
+    SUM(
+        aml.price_subtotal * (CASE WHEN amv.type='out_refund' THEN -1 ELSE 1 END) -
+        (CASE
+            WHEN amv.type='out_refund' AND sol.price_unit = aml.price_unit
+            THEN (sol.purchase_price * aml.quantity * -1)
+            WHEN amv.type='out_invoice'
+            THEN (sol.purchase_price * aml.quantity)
+            ELSE 0
+        END))::money,
+    (CASE
+        WHEN SUM(aml.price_subtotal * (CASE WHEN amv.type='out_refund' THEN -1 ELSE 1 END)) = 0
+	    THEN 0
+        ELSE
+            round(SUM(aml.price_subtotal * (CASE WHEN amv.type='out_refund' THEN -1 ELSE 1 END) -
+                (CASE
+                    WHEN amv.type='out_refund' AND sol.price_unit=aml.price_unit
+                    THEN (sol.purchase_price * aml.quantity * -1)
+                    WHEN amv.type='out_invoice'
+                    THEN (sol.purchase_price * aml.quantity)
+                    ELSE 0
+                END)) * 100 / SUM(aml.price_subtotal * (CASE WHEN amv.type = 'out_refund' THEN -1 ELSE 1 END)), 2)
+    END),
+    sales_usr.id, crm_team.id
+
+FROM
+    account_move amv, res_users sales_usr, res_partner sales_ptn, account_move_line aml,
+    product_product prod, product_template tmpl, product_category categ,
+    sale_order_line_invoice_rel sol_rel, sale_order_line sol, crm_team
+
+WHERE
+    amv.type IN ('out_invoice','out_refund')
+    AND amv.invoice_user_id = sales_usr.id
+    AND sales_usr.partner_id = sales_ptn.id
+    AND amv.id = aml.move_id
+    AND aml.product_id = prod.id
+    AND prod.product_tmpl_id = tmpl.id
+    AND tmpl.categ_id = categ.id
+    AND sol_rel.invoice_line_id = aml.id
+    AND sol.id = sol_rel.order_line_id
+    AND sales_usr.sale_team_id = crm_team.id
+    AND categ.complete_name <= '4'
+    AND amv.date BETWEEN sdate AND edate
+GROUP BY sales_usr.id, sales_ptn.name, crm_team.id
+ORDER BY sales_usr.id;
