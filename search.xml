@@ -1,82 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <search>
   <entry>
-    <title>從 CentOS 7 升級遷移到 Rocky Linux 8</title>
-    <url>/2022/08/01/Upgrade-from-CentOS-7-to-Rocky-Linux/</url>
-    <content><![CDATA[<p>由於 CentOS 7 即將在 2024 年 6 月 30 日後進入 End Of Life，而 Rocky Linux 由 CentOS 8 分支而來，同樣是基於 RHEL 8 而來的下游衍生版本，是一個升級作為替代的好選擇，因此希望藉由這篇文章整理並分享我嘗試升級的操作過程。</p>
-<span id="more"></span>
-<p>以下操作過程<strong>不保證</strong>系統完整性，請養成操作前備份資料的習慣，並<strong>避免直接在正式營運環境做嘗試</strong></p>
-<p>整個升級過程大致可以切分為以下部分：</p>
-<ol>
-<li>從 CentOS Linux 7 升級到 CentOS Linux 8</li>
-<li>從 CentOS Linux 8 遷移到 Rocky Linux 8</li>
-</ol>
-<hr>
-<h2 id="從-CentOS-Linux-7-升級到-CentOS-Linux-8"><a class="header-anchor" href="#從-CentOS-Linux-7-升級到-CentOS-Linux-8"></a>從 CentOS Linux 7 升級到 CentOS Linux 8</h2>
-<p>這一步的主要目的為將系統更新為 CentOS 8.5，才能順利遷移到 Rocky Linux。</p>
-<h3 id="更新-CentOS-7"><a class="header-anchor" href="#更新-CentOS-7"></a>更新 CentOS 7</h3>
-<p>先更新系統現有軟體包</p>
-<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">sudo yum update -y</span><br><span class="line">sudo reboot</span><br></pre></td></tr></table></figure>
-<p>安裝 <code>epel-release</code> 以安裝第三方擴充資源庫</p>
-<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">sudo yum install -y epel-release</span><br></pre></td></tr></table></figure>
-<p>安裝升級所需工具</p>
-<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">sudo yum install -y rpmconf yum-utils</span><br></pre></td></tr></table></figure>
-<p>檢查軟體包或配置是否有衝突，如果有衝突可選擇保留原有版本或以開發者版本覆蓋</p>
-<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">sudo rpmconf -a</span><br></pre></td></tr></table></figure>
-<p>列出未被依賴以及不在來源資源庫的軟體包</p>
-<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">sudo package-cleanup --leaves</span><br><span class="line">sudo package-cleanup --orphans</span><br></pre></td></tr></table></figure>
-<p>如果有不需要的軟體包，可以使用以下指令清除</p>
-<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">sudo yum remove -y &lt;package&gt;</span><br></pre></td></tr></table></figure>
-<p>安裝 DNF，為 YUM 下一代的軟體包管理工具</p>
-<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">sudo yum install -y dnf</span><br></pre></td></tr></table></figure>
-<p>有了 DNF，就可以移除 YUM 了</p>
-<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">sudo yum remove yum yum-metadata-parser</span><br></pre></td></tr></table></figure>
-<p>清除 YUM 相關設定檔</p>
-<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">sudo <span class="built_in">rm</span> -Rf /etc/yum</span><br></pre></td></tr></table></figure>
-<p>接著用 DNF 做一次 CentOS 7 系統更新</p>
-<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">sudo dnf upgrade -y</span><br></pre></td></tr></table></figure>
-<h3 id="更新至-CentOS-8"><a class="header-anchor" href="#更新至-CentOS-8"></a>更新至 CentOS 8</h3>
-<p>安裝 CentOS 8 資源庫</p>
-<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">sudo dnf install http://vault.centos.org/8.5.2111/BaseOS/x86_64/os/Packages/&#123;centos-linux-repos-8-3.el8.noarch.rpm,centos-linux-release-8.5-1.2111.el8.noarch.rpm,centos-gpg-keys-8-3.el8.noarch.rpm&#125;</span><br></pre></td></tr></table></figure>
-<p>更新 epel-release</p>
-<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">dnf -y upgrade https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm</span><br></pre></td></tr></table></figure>
-<p>備份及更新來源資源庫檔</p>
-<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="built_in">cd</span> /etc/yum.repos.d</span><br><span class="line">sudo <span class="built_in">mkdir</span> backups</span><br><span class="line">sudo <span class="built_in">mv</span> CentOS-* backups</span><br><span class="line"></span><br><span class="line"><span class="comment"># Create new for CentOS BaseOS repo</span></span><br><span class="line">sudo <span class="built_in">tee</span> CentOS-Linux-BaseOS.repo&lt;&lt;<span class="string">EOM</span></span><br><span class="line"><span class="string">[baseos]</span></span><br><span class="line"><span class="string">name=CentOS Linux \$releasever - BaseOS</span></span><br><span class="line"><span class="string">baseurl=http://vault.centos.org/8.5.2111/BaseOS/\$basearch/os/</span></span><br><span class="line"><span class="string">gpgcheck=1</span></span><br><span class="line"><span class="string">enabled=1</span></span><br><span class="line"><span class="string">gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-centosofficial</span></span><br><span class="line"><span class="string">EOM</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># Create new for CentOS AppStream repo</span></span><br><span class="line">sudo <span class="built_in">tee</span> CentOS-Linux-AppStream.repo&lt;&lt;<span class="string">EOM</span></span><br><span class="line"><span class="string">[appstream]</span></span><br><span class="line"><span class="string">name=CentOS Linux \$releasever - AppStream</span></span><br><span class="line"><span class="string">baseurl=http://vault.centos.org/8.5.2111/AppStream/\$basearch/os/</span></span><br><span class="line"><span class="string">gpgcheck=1</span></span><br><span class="line"><span class="string">enabled=1</span></span><br><span class="line"><span class="string">gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-centosofficial</span></span><br><span class="line"><span class="string">EOM</span></span><br></pre></td></tr></table></figure>
-<p>移除暫存檔</p>
-<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">dnf clean all</span><br></pre></td></tr></table></figure>
-<p>移除舊版本 kernel 及衝突軟體包</p>
-<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">sudo rpm -e `rpm -q kernel` --nodeps</span><br><span class="line">sudo rpm -e `rpm -q kernel-devel` --nodeps</span><br><span class="line">sudo rpm -e --nodeps sysvinit-tools</span><br></pre></td></tr></table></figure>
-<p>安裝 CentOS 8 系統更新</p>
-<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">dnf -y --releasever=8 --allowerasing --<span class="built_in">setopt</span>=deltarpm=<span class="literal">false</span> distro-sync</span><br></pre></td></tr></table></figure>
-<ul>
-<li>如果遇到 conflicting requests 錯誤，代表該軟體包可能在 CentOS 8 更改名稱導致更新時未找到相容版本依賴的軟體包，可以先透過 <code>dnf remove</code> 指令將衝突的舊軟體包移除後，再重新透過以上指令更新</li>
-</ul>
-<p>安裝新版本 kernel</p>
-<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">dnf install -y kernel-core</span><br></pre></td></tr></table></figure>
-<p>最後以最精簡內容安裝 CentOS 8</p>
-<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">dnf -y groupupdate <span class="string">&quot;Core&quot;</span> <span class="string">&quot;Minimal Install&quot;</span></span><br></pre></td></tr></table></figure>
-<p>安裝後重新啟動系統，檢查作業系統及 kernel 版本是否已更新。</p>
-<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ <span class="built_in">cat</span> /etc/centos-release</span><br><span class="line">CentOS Linux release 8.5.2111</span><br><span class="line">$ <span class="built_in">uname</span> -r</span><br><span class="line">4.18.0-348.7.1.el8_5.x86_64</span><br></pre></td></tr></table></figure>
-<hr>
-<h2 id="從-CentOS-Linux-8-遷移到-Rocky-Linux-8"><a class="header-anchor" href="#從-CentOS-Linux-8-遷移到-Rocky-Linux-8"></a>從 CentOS Linux 8 遷移到 Rocky Linux 8</h2>
-<p>這一部分就相當簡單，已經有現成腳本可以使用。</p>
-<h3 id="下載遷移腳本"><a class="header-anchor" href="#下載遷移腳本"></a>下載遷移腳本</h3>
-<p>需先安裝 wget 下載工具</p>
-<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">sudo dnf -y install wget</span><br><span class="line">wget https://raw.githubusercontent.com/rocky-linux/rocky-tools/main/migrate2rocky/migrate2rocky.sh</span><br></pre></td></tr></table></figure>
-<h3 id="執行遷移腳本"><a class="header-anchor" href="#執行遷移腳本"></a>執行遷移腳本</h3>
-<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">sudo <span class="built_in">chmod</span> a+x migrate2rocky.sh</span><br><span class="line">sudo migrate2rocky.sh -r</span><br></pre></td></tr></table></figure>
-<p>執行完畢後需要重新啟動系統</p>
-<p>登入後，可以用以下指令確認更新結果</p>
-<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line"><span class="meta prompt_"># </span><span class="language-bash"><span class="built_in">cat</span> /etc/os-release</span></span><br><span class="line">NAME=&quot;Rocky Linux&quot;</span><br><span class="line">VERSION=&quot;8.6 (Green Obsidian)&quot;</span><br><span class="line">ID=&quot;rocky&quot;</span><br><span class="line">ID_LIKE=&quot;rhel centos fedora&quot;</span><br><span class="line">VERSION_ID=&quot;8.6&quot;</span><br><span class="line">PLATFORM_ID=&quot;platform:el8&quot;</span><br><span class="line">PRETTY_NAME=&quot;Rocky Linux 8.6 (Green Obsidian)&quot;</span><br><span class="line">ANSI_COLOR=&quot;0;32&quot;</span><br><span class="line">CPE_NAME=&quot;cpe:/o:rocky:rocky:8:GA&quot;</span><br><span class="line">HOME_URL=&quot;https://rockylinux.org/&quot;</span><br><span class="line">BUG_REPORT_URL=&quot;https://bugs.rockylinux.org/&quot;</span><br><span class="line">ROCKY_SUPPORT_PRODUCT=&quot;Rocky Linux&quot;</span><br><span class="line">ROCKY_SUPPORT_PRODUCT_VERSION=&quot;8&quot;</span><br><span class="line">REDHAT_SUPPORT_PRODUCT=&quot;Rocky Linux&quot;</span><br><span class="line">REDHAT_SUPPORT_PRODUCT_VERSION=&quot;8&quot;</span><br></pre></td></tr></table></figure>
-]]></content>
-      <categories>
-        <category>DevOps筆記</category>
-      </categories>
-      <tags>
-        <tag>linux,centos,rocky-linux</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>Rocky Linux GitLab + GitLab Runner + GitLab CI 建置教學</title>
     <url>/2022/07/21/Rocky-Linux-GitLab-GitLab-Runner-GitLab-CI-%E5%BB%BA%E7%BD%AE%E6%95%99%E5%AD%B8/</url>
     <content><![CDATA[<p>本文示範如何在 Rocky Linux 於內部網路自行架設 GitLab 及 GitLab Runner 服務，並將 GitLab 加入 git remote，最後撰寫 <code>.gitlab-ci.yml</code>，透過 GitLab Runner 在 git push 時自動執行 CI 腳本。</p>
@@ -193,6 +117,82 @@
       </categories>
       <tags>
         <tag>linux,rocky-linux,gitlab</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>從 CentOS 7 升級遷移到 Rocky Linux 8</title>
+    <url>/2022/08/01/Upgrade-from-CentOS-7-to-Rocky-Linux/</url>
+    <content><![CDATA[<p>由於 CentOS 7 即將在 2024 年 6 月 30 日後進入 End Of Life，而 Rocky Linux 由 CentOS 8 分支而來，同樣是基於 RHEL 8 而來的下游衍生版本，是一個升級作為替代的好選擇，因此希望藉由這篇文章整理並分享我嘗試升級的操作過程。</p>
+<span id="more"></span>
+<p>以下操作過程<strong>不保證</strong>系統完整性，請養成操作前備份資料的習慣，並<strong>避免直接在正式營運環境做嘗試</strong></p>
+<p>整個升級過程大致可以切分為以下部分：</p>
+<ol>
+<li>從 CentOS Linux 7 升級到 CentOS Linux 8</li>
+<li>從 CentOS Linux 8 遷移到 Rocky Linux 8</li>
+</ol>
+<hr>
+<h2 id="從-CentOS-Linux-7-升級到-CentOS-Linux-8"><a class="header-anchor" href="#從-CentOS-Linux-7-升級到-CentOS-Linux-8"></a>從 CentOS Linux 7 升級到 CentOS Linux 8</h2>
+<p>這一步的主要目的為將系統更新為 CentOS 8.5，才能順利遷移到 Rocky Linux。</p>
+<h3 id="更新-CentOS-7"><a class="header-anchor" href="#更新-CentOS-7"></a>更新 CentOS 7</h3>
+<p>先更新系統現有軟體包</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">sudo yum update -y</span><br><span class="line">sudo reboot</span><br></pre></td></tr></table></figure>
+<p>安裝 <code>epel-release</code> 以安裝第三方擴充資源庫</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">sudo yum install -y epel-release</span><br></pre></td></tr></table></figure>
+<p>安裝升級所需工具</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">sudo yum install -y rpmconf yum-utils</span><br></pre></td></tr></table></figure>
+<p>檢查軟體包或配置是否有衝突，如果有衝突可選擇保留原有版本或以開發者版本覆蓋</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">sudo rpmconf -a</span><br></pre></td></tr></table></figure>
+<p>列出未被依賴以及不在來源資源庫的軟體包</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">sudo package-cleanup --leaves</span><br><span class="line">sudo package-cleanup --orphans</span><br></pre></td></tr></table></figure>
+<p>如果有不需要的軟體包，可以使用以下指令清除</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">sudo yum remove -y &lt;package&gt;</span><br></pre></td></tr></table></figure>
+<p>安裝 DNF，為 YUM 下一代的軟體包管理工具</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">sudo yum install -y dnf</span><br></pre></td></tr></table></figure>
+<p>有了 DNF，就可以移除 YUM 了</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">sudo yum remove yum yum-metadata-parser</span><br></pre></td></tr></table></figure>
+<p>清除 YUM 相關設定檔</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">sudo <span class="built_in">rm</span> -Rf /etc/yum</span><br></pre></td></tr></table></figure>
+<p>接著用 DNF 做一次 CentOS 7 系統更新</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">sudo dnf upgrade -y</span><br></pre></td></tr></table></figure>
+<h3 id="更新至-CentOS-8"><a class="header-anchor" href="#更新至-CentOS-8"></a>更新至 CentOS 8</h3>
+<p>安裝 CentOS 8 資源庫</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">sudo dnf install http://vault.centos.org/8.5.2111/BaseOS/x86_64/os/Packages/&#123;centos-linux-repos-8-3.el8.noarch.rpm,centos-linux-release-8.5-1.2111.el8.noarch.rpm,centos-gpg-keys-8-3.el8.noarch.rpm&#125;</span><br></pre></td></tr></table></figure>
+<p>更新 epel-release</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">dnf -y upgrade https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm</span><br></pre></td></tr></table></figure>
+<p>備份及更新來源資源庫檔</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="built_in">cd</span> /etc/yum.repos.d</span><br><span class="line">sudo <span class="built_in">mkdir</span> backups</span><br><span class="line">sudo <span class="built_in">mv</span> CentOS-* backups</span><br><span class="line"></span><br><span class="line"><span class="comment"># Create new for CentOS BaseOS repo</span></span><br><span class="line">sudo <span class="built_in">tee</span> CentOS-Linux-BaseOS.repo&lt;&lt;<span class="string">EOM</span></span><br><span class="line"><span class="string">[baseos]</span></span><br><span class="line"><span class="string">name=CentOS Linux \$releasever - BaseOS</span></span><br><span class="line"><span class="string">baseurl=http://vault.centos.org/8.5.2111/BaseOS/\$basearch/os/</span></span><br><span class="line"><span class="string">gpgcheck=1</span></span><br><span class="line"><span class="string">enabled=1</span></span><br><span class="line"><span class="string">gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-centosofficial</span></span><br><span class="line"><span class="string">EOM</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># Create new for CentOS AppStream repo</span></span><br><span class="line">sudo <span class="built_in">tee</span> CentOS-Linux-AppStream.repo&lt;&lt;<span class="string">EOM</span></span><br><span class="line"><span class="string">[appstream]</span></span><br><span class="line"><span class="string">name=CentOS Linux \$releasever - AppStream</span></span><br><span class="line"><span class="string">baseurl=http://vault.centos.org/8.5.2111/AppStream/\$basearch/os/</span></span><br><span class="line"><span class="string">gpgcheck=1</span></span><br><span class="line"><span class="string">enabled=1</span></span><br><span class="line"><span class="string">gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-centosofficial</span></span><br><span class="line"><span class="string">EOM</span></span><br></pre></td></tr></table></figure>
+<p>移除暫存檔</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">dnf clean all</span><br></pre></td></tr></table></figure>
+<p>移除舊版本 kernel 及衝突軟體包</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">sudo rpm -e `rpm -q kernel` --nodeps</span><br><span class="line">sudo rpm -e `rpm -q kernel-devel` --nodeps</span><br><span class="line">sudo rpm -e --nodeps sysvinit-tools</span><br></pre></td></tr></table></figure>
+<p>安裝 CentOS 8 系統更新</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">dnf -y --releasever=8 --allowerasing --<span class="built_in">setopt</span>=deltarpm=<span class="literal">false</span> distro-sync</span><br></pre></td></tr></table></figure>
+<ul>
+<li>如果遇到 conflicting requests 錯誤，代表該軟體包可能在 CentOS 8 更改名稱導致更新時未找到相容版本依賴的軟體包，可以先透過 <code>dnf remove</code> 指令將衝突的舊軟體包移除後，再重新透過以上指令更新</li>
+</ul>
+<p>安裝新版本 kernel</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">dnf install -y kernel-core</span><br></pre></td></tr></table></figure>
+<p>最後以最精簡內容安裝 CentOS 8</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">dnf -y groupupdate <span class="string">&quot;Core&quot;</span> <span class="string">&quot;Minimal Install&quot;</span></span><br></pre></td></tr></table></figure>
+<p>安裝後重新啟動系統，檢查作業系統及 kernel 版本是否已更新。</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ <span class="built_in">cat</span> /etc/centos-release</span><br><span class="line">CentOS Linux release 8.5.2111</span><br><span class="line">$ <span class="built_in">uname</span> -r</span><br><span class="line">4.18.0-348.7.1.el8_5.x86_64</span><br></pre></td></tr></table></figure>
+<hr>
+<h2 id="從-CentOS-Linux-8-遷移到-Rocky-Linux-8"><a class="header-anchor" href="#從-CentOS-Linux-8-遷移到-Rocky-Linux-8"></a>從 CentOS Linux 8 遷移到 Rocky Linux 8</h2>
+<p>這一部分就相當簡單，已經有現成腳本可以使用。</p>
+<h3 id="下載遷移腳本"><a class="header-anchor" href="#下載遷移腳本"></a>下載遷移腳本</h3>
+<p>需先安裝 wget 下載工具</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">sudo dnf -y install wget</span><br><span class="line">wget https://raw.githubusercontent.com/rocky-linux/rocky-tools/main/migrate2rocky/migrate2rocky.sh</span><br></pre></td></tr></table></figure>
+<h3 id="執行遷移腳本"><a class="header-anchor" href="#執行遷移腳本"></a>執行遷移腳本</h3>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">sudo <span class="built_in">chmod</span> a+x migrate2rocky.sh</span><br><span class="line">sudo migrate2rocky.sh -r</span><br></pre></td></tr></table></figure>
+<p>執行完畢後需要重新啟動系統</p>
+<p>登入後，可以用以下指令確認更新結果</p>
+<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line"><span class="meta prompt_"># </span><span class="language-bash"><span class="built_in">cat</span> /etc/os-release</span></span><br><span class="line">NAME=&quot;Rocky Linux&quot;</span><br><span class="line">VERSION=&quot;8.6 (Green Obsidian)&quot;</span><br><span class="line">ID=&quot;rocky&quot;</span><br><span class="line">ID_LIKE=&quot;rhel centos fedora&quot;</span><br><span class="line">VERSION_ID=&quot;8.6&quot;</span><br><span class="line">PLATFORM_ID=&quot;platform:el8&quot;</span><br><span class="line">PRETTY_NAME=&quot;Rocky Linux 8.6 (Green Obsidian)&quot;</span><br><span class="line">ANSI_COLOR=&quot;0;32&quot;</span><br><span class="line">CPE_NAME=&quot;cpe:/o:rocky:rocky:8:GA&quot;</span><br><span class="line">HOME_URL=&quot;https://rockylinux.org/&quot;</span><br><span class="line">BUG_REPORT_URL=&quot;https://bugs.rockylinux.org/&quot;</span><br><span class="line">ROCKY_SUPPORT_PRODUCT=&quot;Rocky Linux&quot;</span><br><span class="line">ROCKY_SUPPORT_PRODUCT_VERSION=&quot;8&quot;</span><br><span class="line">REDHAT_SUPPORT_PRODUCT=&quot;Rocky Linux&quot;</span><br><span class="line">REDHAT_SUPPORT_PRODUCT_VERSION=&quot;8&quot;</span><br></pre></td></tr></table></figure>
+]]></content>
+      <categories>
+        <category>DevOps筆記</category>
+      </categories>
+      <tags>
+        <tag>linux,centos,rocky-linux</tag>
       </tags>
   </entry>
   <entry>
