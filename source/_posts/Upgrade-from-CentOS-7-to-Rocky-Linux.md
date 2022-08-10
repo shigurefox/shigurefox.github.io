@@ -1,14 +1,14 @@
 ---
 title: 從 CentOS 7 升級遷移到 Rocky Linux 8
-categories:
-tags: 
-    - linux
-    - centos
-    - rocky-linux
+categories: DevOps筆記
+tags: linux,centos,rocky-linux
+date: 2022-08-01 09:20:52
 ---
 
-由於 CentOS 7 即將在 2024 年底進入 End Of Life，而 Red Hat ，
-，其中 Rocky Linux 是，因此希望藉由這篇文章整理並分享我嘗試升級的操作過程。
+
+由於 CentOS 7 即將在 2024 年 6 月 30 日後進入 End Of Life，而 Rocky Linux 由 CentOS 8 分支而來，同樣是基於 RHEL 8 而來的下游衍生版本，是一個升級作為替代的好選擇，因此希望藉由這篇文章整理並分享我嘗試升級的操作過程。
+
+<!-- more -->
 
 以下操作過程**不保證**系統完整性，請養成操作前備份資料的習慣，並**避免直接在正式營運環境做嘗試**
 
@@ -21,11 +21,11 @@ tags:
 
 ## 從 CentOS Linux 7 升級到 CentOS Linux 8
 
-由於 Rocky Linux 是基於 RHEL 8 而來，這一步的主要目的為將系統更新為 CentOS 8.5，才能順利遷移到 Rocky Linux。
+這一步的主要目的為將系統更新為 CentOS 8.5，才能順利遷移到 Rocky Linux。
 
 ### 更新 CentOS 7
 
-先更新現有軟體包
+先更新系統現有軟體包
 
 ```bash
 sudo yum update -y
@@ -50,14 +50,14 @@ sudo yum install -y rpmconf yum-utils
 sudo rpmconf -a
 ```
 
-列出未被依賴的軟體包
+列出未被依賴以及不在來源資源庫的軟體包
 
 ```bash
 sudo package-cleanup --leaves
 sudo package-cleanup --orphans
 ```
 
-如果有，可以使用以下指令清除
+如果有不需要的軟體包，可以使用以下指令清除
 
 ```bash
 sudo yum remove -y <package>
@@ -69,7 +69,7 @@ sudo yum remove -y <package>
 sudo yum install -y dnf
 ```
 
-移除 YUM
+有了 DNF，就可以移除 YUM 了
 
 ```bash
 sudo yum remove yum yum-metadata-parser
@@ -81,7 +81,7 @@ sudo yum remove yum yum-metadata-parser
 sudo rm -Rf /etc/yum
 ```
 
-用 DNF 做一次 CentOS 7 系統更新
+接著用 DNF 做一次 CentOS 7 系統更新
 
 ```bash
 sudo dnf upgrade -y
@@ -101,7 +101,7 @@ sudo dnf install http://vault.centos.org/8.5.2111/BaseOS/x86_64/os/Packages/{cen
 dnf -y upgrade https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm
 ```
 
-更新來源資源庫檔
+備份及更新來源資源庫檔
 
 ```bash
 cd /etc/yum.repos.d
@@ -163,8 +163,7 @@ dnf install -y kernel-core
 dnf -y groupupdate "Core" "Minimal Install"
 ```
 
-安裝後重新啟動系統
-檢查作業系統及 kernel 版本是否已更新
+安裝後重新啟動系統，檢查作業系統及 kernel 版本是否已更新。
 
 ```bash
 $ cat /etc/centos-release
@@ -177,21 +176,27 @@ $ uname -r
 
 ## 從 CentOS Linux 8 遷移到 Rocky Linux 8
 
-安裝 `wget` 以下載遷移腳本
+這一部分就相當簡單，已經有現成腳本可以使用。
+
+### 下載遷移腳本
+
+需先安裝 wget 下載工具
 
 ```bash
 sudo dnf -y install wget
 wget https://raw.githubusercontent.com/rocky-linux/rocky-tools/main/migrate2rocky/migrate2rocky.sh
 ```
 
-執行遷移腳本
+### 執行遷移腳本
 
 ```bash
 sudo chmod a+x migrate2rocky.sh
 sudo migrate2rocky.sh -r
 ```
 
-重新啟動系統，確認更新結果
+執行完畢後需要重新啟動系統  
+
+登入後，可以用以下指令確認更新結果
 
 ```shell
 # cat /etc/os-release

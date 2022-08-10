@@ -1,11 +1,14 @@
 ---
 title: Rocky Linux GitLab + GitLab Runner + GitLab CI 建置教學
-tags: rocky-linux gitlab
-categories: 程式筆記
+categories: DevOps筆記
+tags: linux,rocky-linux,gitlab
+date: 2022-07-21 15:37:53
 ---
 
 
 本文示範如何在 Rocky Linux 於內部網路自行架設 GitLab 及 GitLab Runner 服務，並將 GitLab 加入 git remote，最後撰寫 `.gitlab-ci.yml`，透過 GitLab Runner 在 git push 時自動執行 CI 腳本。
+
+<!-- more -->
 
 ---
 

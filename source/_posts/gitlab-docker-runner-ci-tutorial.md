@@ -2,9 +2,10 @@
 title: CentOS 7 GitLab + GitLab Runner + GitLab CI 建置教學
 date: 2022-07-18 18:26:50
 categories:
-    - [程式筆記]
+    - [DevOps 筆記]
 tags:
-    - [centos-7]
+    - [linux]
+    - [centos]
     - [docker]
     - [gitlab]
 ---
