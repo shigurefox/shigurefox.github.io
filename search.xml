@@ -1,0 +1,362 @@
+<?xml version="1.0" encoding="utf-8"?>
+<search>
+  <entry>
+    <title>Rocky Linux GitLab + GitLab Runner + GitLab CI 建置教學</title>
+    <url>/2022/07/21/Rocky-Linux-GitLab-GitLab-Runner-GitLab-CI-%E5%BB%BA%E7%BD%AE%E6%95%99%E5%AD%B8/</url>
+    <content><![CDATA[<p>本文示範如何在 Rocky Linux 於內部網路自行架設 GitLab 及 GitLab Runner 服務，並將 GitLab 加入 git remote，最後撰寫 <code>.gitlab-ci.yml</code>，透過 GitLab Runner 在 git push 時自動執行 CI 腳本。</p>
+<span id="more"></span>
+<hr>
+<h2 id="設定-Host-環境"><a class="header-anchor" href="#設定-Host-環境"></a>設定 Host 環境</h2>
+<h3 id="編輯-sshd-config"><a class="header-anchor" href="#編輯-sshd-config"></a>編輯 <code>sshd_config</code></h3>
+<p>透過編輯 <code>/etc/ssh/sshd_config</code> 檔案來更改 Host 系統使用的 <code>ssh</code> port，避免後續透過 <code>ssh</code> 與 GitLab 互動時會與系統衝突， <code>AddressFamily</code> 改為 <code>inet</code> 表示僅允許透過 ipv4 連線</p>
+<figure class="highlight diff"><table><tr><td class="code"><pre><span class="line"><span class="deletion">- Port 22</span></span><br><span class="line"><span class="addition">+ Port 2222</span></span><br><span class="line"><span class="deletion">- AddressFamily any</span></span><br><span class="line"><span class="addition">+ AddressFamily inet</span></span><br></pre></td></tr></table></figure>
+<ul>
+<li>可以先加上 port 2222，確定可以用 port 2222 進行 <code>ssh</code> 連線後，再刪除 port 22 這行</li>
+</ul>
+<p>接著透過 <code>semanage</code> 將 port 2222 加入 ssh 使用的 port 清單後重啟 sshd</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">semanage port -a -t ssh_port_t -p tcp 2222</span><br><span class="line">semanage port -l | grep ssh</span><br><span class="line">systemctl restart sshd</span><br></pre></td></tr></table></figure>
+<p>如果出現 <code>semanage: command not found</code> 錯誤，表示系統未安裝此工具程式，可透過以下指令安裝解決</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">dnf install -y policycoreutils</span><br></pre></td></tr></table></figure>
+<h3 id="設定防火牆"><a class="header-anchor" href="#設定防火牆"></a>設定防火牆</h3>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">firewall-cmd --add-port=2222/tcp --permanent</span><br><span class="line">firewall-cmd --add-port=443/tcp --permanent</span><br><span class="line">firewall-cmd --reload</span><br></pre></td></tr></table></figure>
+<hr>
+<h2 id="使用-Podman-建置-GitLab"><a class="header-anchor" href="#使用-Podman-建置-GitLab"></a>使用 Podman 建置 GitLab</h2>
+<h3 id="安裝-Podman"><a class="header-anchor" href="#安裝-Podman"></a>安裝 Podman</h3>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">sudo dnf install podman</span><br></pre></td></tr></table></figure>
+<p>確認已安裝 podman 版本</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">podman version</span><br></pre></td></tr></table></figure>
+<p>在任意目錄如 <code>/srv/gitlab/</code> 下建立並編輯 <code>docker-comose.yml</code></p>
+<figure class="highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="attr">version:</span> <span class="string">&#x27;3.6&#x27;</span></span><br><span class="line"><span class="attr">services:</span></span><br><span class="line">  <span class="attr">web:</span></span><br><span class="line">    <span class="attr">image:</span> <span class="string">gitlab/gitlab-ee:latest</span></span><br><span class="line">    <span class="attr">container_name:</span> <span class="string">gitlab</span></span><br><span class="line">    <span class="attr">restart:</span> <span class="string">always</span></span><br><span class="line">    <span class="attr">hostname:</span> <span class="string">&#x27;gitlab&#x27;</span></span><br><span class="line">    <span class="attr">privileged:</span> <span class="literal">true</span></span><br><span class="line">    <span class="attr">environment:</span></span><br><span class="line">      <span class="attr">GITLAB_OMNIBUS_CONFIG:</span> <span class="string">|</span></span><br><span class="line"><span class="string">        external_url &#x27;https://gitlab&#x27;</span></span><br><span class="line"><span class="string">        # SMTP server 設定</span></span><br><span class="line"><span class="string">        gitlab_rails[&#x27;gitlab_shell_ssh_port&#x27;] = 22</span></span><br><span class="line"><span class="string">        gitlab_rails[&#x27;smtp_enable&#x27;] = true</span></span><br><span class="line"><span class="string">        gitlab_rails[&#x27;smtp_address&#x27;] = &#x27;&lt;smtp server url&gt;&#x27;</span></span><br><span class="line"><span class="string">        gitlab_rails[&#x27;smtp_port&#x27;] = 587</span></span><br><span class="line"><span class="string">        gitlab_rails[&#x27;smtp_domain&#x27;] = &#x27;&lt;smtp server domain name&gt;&#x27;</span></span><br><span class="line"><span class="string">        gitlab_rails[&#x27;smtp_user_name&#x27;] = &quot;&lt;smtp username&gt;&quot;</span></span><br><span class="line"><span class="string">        gitlab_rails[&#x27;smtp_password&#x27;] = &quot;&lt;smtp password&gt;&quot;</span></span><br><span class="line"><span class="string">        gitlab_rails[&#x27;smtp_authentication&#x27;] = &#x27;login&#x27;</span></span><br><span class="line"><span class="string">        gitlab_rails[&#x27;gitlab_email_from&#x27;] = &#x27;noreply@my-gitlab&#x27;</span></span><br><span class="line"><span class="string">        gitlab_rails[&#x27;gitlab_email_reply_to&#x27;] = &#x27;root@my-gitlab&#x27;</span></span><br><span class="line"><span class="string">        gitlab_rails[&#x27;smtp_enable_starttls_auto&#x27;] = true</span></span><br><span class="line"><span class="string">        gitlab_rails[&#x27;smtp_tls&#x27;] = false</span></span><br><span class="line"><span class="string">        gitlab_rails[&#x27;smtp_pool&#x27;] = false</span></span><br><span class="line"><span class="string"></span>    <span class="attr">ports:</span></span><br><span class="line">      <span class="bullet">-</span> <span class="string">&#x27;80:80&#x27;</span></span><br><span class="line">      <span class="bullet">-</span> <span class="string">&#x27;443:443&#x27;</span></span><br><span class="line">      <span class="bullet">-</span> <span class="string">&#x27;22:22&#x27;</span></span><br><span class="line">    <span class="attr">volumes:</span></span><br><span class="line">      <span class="bullet">-</span> <span class="string">&#x27;./gitlab/config:/etc/gitlab:Z&#x27;</span></span><br><span class="line">      <span class="bullet">-</span> <span class="string">&#x27;./gitlab/logs:/var/log/gitlab:Z&#x27;</span></span><br><span class="line">      <span class="bullet">-</span> <span class="string">&#x27;./gitlab/data:/var/opt/gitlab:Z&#x27;</span></span><br><span class="line">    <span class="attr">shm_size:</span> <span class="string">&#x27;256m&#x27;</span></span><br></pre></td></tr></table></figure>
+<ul>
+<li>需要在 volume 對應的容器路徑後面加上 <code>:Z</code> 以讓容器有權限寫入</li>
+</ul>
+<p>接著用以下指令啟動容器</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">podman compose up -d</span><br></pre></td></tr></table></figure>
+<ul>
+<li>-d: 表示在背景執行</li>
+</ul>
+<p>查看容器 log</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">podman logs -f gitlab</span><br></pre></td></tr></table></figure>
+<ul>
+<li>-f (–follow): 表示追蹤並即時印出新的log</li>
+</ul>
+<p>日後如果要更改設定，可以選擇透過在 <code>GITLAB_OMNIBUS_CONFIG</code> 下修改後重上容器，或直接編輯 <code>gitlab_data/config/gitlab.rb</code> 做修改</p>
+<p>編輯完畢後執行</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">podman <span class="built_in">exec</span> -it gitlab gitlab-ctl reconfigure</span><br></pre></td></tr></table></figure>
+<hr>
+<h2 id="自簽憑證處理"><a class="header-anchor" href="#自簽憑證處理"></a>自簽憑證處理</h2>
+<p>在透過 Omnibus 設定建立的 GitLab 容器，預設會透過 Let’s Encrypt 產生自簽憑證，後續註冊 GitLab Runner 時可能會遇到 <code>x509: certificate relies on legacy Common Name field, use SANs instead</code> 的問題，這是由於自動產生的憑證缺少 SAN 欄位，需要重新簽署帶有 SAN (Subject Alternative Names) 欄位設定的憑證。</p>
+<p>建立並編輯 <code>gitlab_data/config/ssl/ssl.conf</code></p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">[req]</span><br><span class="line">prompt = no</span><br><span class="line">default_md = sha256</span><br><span class="line">default_bits = 2048</span><br><span class="line">distinguished_name = dn</span><br><span class="line">x509_extensions = v3_req</span><br><span class="line"></span><br><span class="line">[dn]</span><br><span class="line">[req]</span><br><span class="line">prompt = no</span><br><span class="line">default_md = sha256</span><br><span class="line">default_bits = 2048</span><br><span class="line">distinguished_name = dn</span><br><span class="line">x509_extensions = v3_req</span><br><span class="line"></span><br><span class="line">[dn]</span><br><span class="line">C = TW</span><br><span class="line">ST = Taiwan</span><br><span class="line">L = Taipei</span><br><span class="line">O = gitlab Inc.</span><br><span class="line">OU = IT Department</span><br><span class="line">emailAddress = &lt;YOUR EMAIL&gt;</span><br><span class="line">CN = gitlab</span><br><span class="line"></span><br><span class="line">[v3_req]</span><br><span class="line">subjectAltName = @alt_names</span><br><span class="line"></span><br><span class="line">[alt_names]</span><br><span class="line">DNS.1 = gitlab</span><br><span class="line">DNS.2 = *.gitlab</span><br><span class="line">IP.1  = &lt;YOUR SERVER IP&gt;</span><br></pre></td></tr></table></figure>
+<p>由以下指令產生新憑證</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">openssl req -x509 -new -nodes -sha256 -utf8 -days 3650 -newkey rsa:2048 -keyout gitlab.key -out gitlab.crt -config ssl.conf</span><br></pre></td></tr></table></figure>
+<p>憑證公私鑰檔名應該與 <code>docker-compose.yml</code> 中的 <code>external_url</code> 設定一致。</p>
+<hr>
+<h2 id="設定-GitLab"><a class="header-anchor" href="#設定-GitLab"></a>設定 GitLab</h2>
+<h3 id="創建管理員帳號"><a class="header-anchor" href="#創建管理員帳號"></a>創建管理員帳號</h3>
+<p>預設管理員帳號為 <code>root</code>，密碼則存在 <code>gitlab/config/initial_root_password</code> 檔案內，建議登入後點選左上角 <code>Menu</code><br>
+→ <code>Admin</code> → <code>new user</code> 創建自己的管理員帳號<sup class="footnote-ref"><a href="#fn1" id="fnref1">[1]</a></sup><sup class="footnote-ref"><a href="#fn2" id="fnref2">[2]</a></sup>，並透過確認信所附的連結設定密碼及啟用。</p>
+<p><img src="/2022/07/21/Rocky-Linux-GitLab-GitLab-Runner-GitLab-CI-%E5%BB%BA%E7%BD%AE%E6%95%99%E5%AD%B8/image01.png" alt="創建使用者畫面"></p>
+<h3 id="創建-Project"><a class="header-anchor" href="#創建-Project"></a>創建 Project</h3>
+<p>有以下幾種做法：</p>
+<ul>
+<li>從 GitLab 網頁 UI 建立空白 Project</li>
+<li>使用本地 git repo 創建</li>
+<li>從 GitHub 等外部 repo 匯入</li>
+</ul>
+<p>本文以使用本地 git repo 做為示範，詳見下段。</p>
+<hr>
+<h2 id="將-GitLab-加入開發環境"><a class="header-anchor" href="#將-GitLab-加入開發環境"></a>將 GitLab 加入開發環境</h2>
+<p>由於是架設在內部網路，建議操作 git 使用 <code>ssh</code> 而不用 <code>https</code> ，可以避開很多TLS 憑證衍生錯誤問題。</p>
+<h3 id="設定-SSH-Key"><a class="header-anchor" href="#設定-SSH-Key"></a>設定 SSH Key</h3>
+<p>開啟開發環境的 <code>~/.ssh</code> 目錄下的 ssh public key 檔案（如 <code>id_rsa.pub</code> 或 <code>id_ed25519.pub</code>），複製其中內容<sup class="footnote-ref"><a href="#fn3" id="fnref3">[3]</a></sup>。</p>
+<p>如 MacOS 可以使用以下指令：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="built_in">cat</span> ~/.ssh/id_ed25519.pub | pbcopy</span><br></pre></td></tr></table></figure>
+<p>如果目錄下沒有公鑰檔，可以用以下指令創建：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">ssh-keygen -t ed25519 -C <span class="string">&#x27;&lt;comment&gt;&#x27;</span></span><br></pre></td></tr></table></figure>
+<ul>
+<li>其中 -C 標示該 key 的使用者資訊，通常會是 <code>&lt;username&gt;@&lt;hostname&gt;.&lt;domain&gt;</code> ，或是使用者的 email address</li>
+</ul>
+<p>點選畫面右上角個人圖示 → <code>Preferences</code>，再點擊畫面左方列表 <code>SSH Keys</code>，將剛才複製的 SSH Key 貼到Key欄位，可一併設定有效期限，最後點擊 <code>Add key</code>。</p>
+<p><img src="/2022/07/21/Rocky-Linux-GitLab-GitLab-Runner-GitLab-CI-%E5%BB%BA%E7%BD%AE%E6%95%99%E5%AD%B8/image02.png" alt="SSH Key 設定畫面"></p>
+<h3 id="設定-git-remote-及創建-GitLab-project"><a class="header-anchor" href="#設定-git-remote-及創建-GitLab-project"></a>設定 git remote 及創建 GitLab project</h3>
+<p>以既有本地檔案初始化 git 並創建 GitLab project</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="built_in">cd</span> &lt;project_folder&gt;</span><br><span class="line">git init --initial-branch=main</span><br><span class="line">git remote add origin git@&lt;GitLab URL&gt;:&lt;username&gt;/&lt;your repo name&gt;.git</span><br><span class="line">git add .</span><br><span class="line">git commit -m <span class="string">&quot;Initial commit&quot;</span></span><br><span class="line">git push -u origin main</span><br></pre></td></tr></table></figure>
+<hr>
+<h2 id="建置-GitLab-Runner"><a class="header-anchor" href="#建置-GitLab-Runner"></a>建置 GitLab Runner</h2>
+<h3 id="編輯-docker-compose-設定檔"><a class="header-anchor" href="#編輯-docker-compose-設定檔"></a>編輯 docker-compose 設定檔</h3>
+<p>在 <code>docker-compose.yml</code> 中加入以下段落：</p>
+<figure class="highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="attr">gitlab-runner:</span></span><br><span class="line">  <span class="attr">image:</span> <span class="string">gitlab/gitlab-runner:latest</span></span><br><span class="line">  <span class="attr">container_name:</span> <span class="string">&#x27;gitlab-runner&#x27;</span></span><br><span class="line">  <span class="attr">environment:</span></span><br><span class="line">    <span class="bullet">-</span> <span class="string">CI_SERVER_URL=https://gitlab</span></span><br><span class="line">  <span class="attr">volumes:</span></span><br><span class="line">    <span class="bullet">-</span> <span class="string">&#x27;/var/run/docker.sock:/var/run/docker.sock&#x27;</span></span><br><span class="line">    <span class="bullet">-</span> <span class="string">&#x27;./gitlab-runner:/etc/gitlab-runner&#x27;</span></span><br><span class="line">  <span class="attr">restart:</span> <span class="string">always</span></span><br></pre></td></tr></table></figure>
+<p>重新下上容器：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">podman compose down</span><br><span class="line">podman compose up -d</span><br></pre></td></tr></table></figure>
+<p>在註冊 Runner 之前，需要複製一份前面步驟產生的 GitLab server 憑證 <code>gitlab.crt</code> 到 <code>./gitlab-runner/certs/</code> 底下。</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="built_in">touch</span> ./gitlab-runner/config.toml</span><br><span class="line"><span class="built_in">mkdir</span> ./gitlab-runner/certs</span><br><span class="line"><span class="built_in">cp</span> ./gitlab/config/ssl/gitlab.crt ./gitlab-runner/certs/</span><br></pre></td></tr></table></figure>
+<h3 id="註冊-GitLab-Runner"><a class="header-anchor" href="#註冊-GitLab-Runner"></a>註冊 GitLab Runner</h3>
+<p>在 Project 頁面，點擊畫面左方列表 <code>Settings</code> → <code>CI/CD</code>，再點擊 Runners 右邊的 <code>Expand</code>，複製 <code>registration token</code>。執行以下指令並依提示填入內容。</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">podman <span class="built_in">exec</span> -it gitlab-runner gitlab-runner register --tls-ca-file /etc/gitlab-runner/certs/gitlab.crt</span><br></pre></td></tr></table></figure>
+<h3 id="撰寫-GitLab-CI-腳本"><a class="header-anchor" href="#撰寫-GitLab-CI-腳本"></a>撰寫 GitLab CI 腳本</h3>
+<p>依照官方提供範例<sup class="footnote-ref"><a href="#fn4" id="fnref4">[4]</a></sup>在專案資料夾根目錄創建並編輯 <code>.gitlab-ci.yml</code>。</p>
+<figure class="highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="attr">stages:</span>          <span class="comment"># List of stages for jobs, and their order of execution</span></span><br><span class="line">  <span class="bullet">-</span> <span class="string">build</span></span><br><span class="line">  <span class="bullet">-</span> <span class="string">test</span></span><br><span class="line">  <span class="bullet">-</span> <span class="string">deploy</span></span><br><span class="line"></span><br><span class="line"><span class="attr">build-job:</span>       <span class="comment"># This job runs in the build stage, which runs first.</span></span><br><span class="line">  <span class="attr">stage:</span> <span class="string">build</span></span><br><span class="line">  <span class="attr">only:</span></span><br><span class="line">    <span class="bullet">-</span> <span class="string">develop</span></span><br><span class="line">  <span class="attr">tags:</span></span><br><span class="line">    <span class="bullet">-</span> <span class="string">&quot;shell&quot;</span></span><br><span class="line">  <span class="attr">script:</span></span><br><span class="line">    <span class="bullet">-</span> <span class="string">echo</span> <span class="string">&quot;Compiling the code...&quot;</span></span><br><span class="line">    <span class="bullet">-</span> <span class="string">echo</span> <span class="string">&quot;Compile complete.&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="attr">unit-test-job:</span>   <span class="comment"># This job runs in the test stage.</span></span><br><span class="line">  <span class="attr">stage:</span> <span class="string">test</span>    <span class="comment"># It only starts when the job in the build stage completes successfully.</span></span><br><span class="line">  <span class="attr">only:</span></span><br><span class="line">    <span class="bullet">-</span> <span class="string">develop</span></span><br><span class="line">  <span class="attr">tags:</span></span><br><span class="line">    <span class="bullet">-</span> <span class="string">&quot;shell&quot;</span></span><br><span class="line">  <span class="attr">script:</span></span><br><span class="line">    <span class="bullet">-</span> <span class="string">echo</span> <span class="string">&quot;Running unit tests... This will take about 60 seconds.&quot;</span></span><br><span class="line">    <span class="bullet">-</span> <span class="string">sleep</span> <span class="number">60</span></span><br><span class="line">    <span class="bullet">-</span> <span class="string">echo</span> <span class="string">&quot;Code coverage is 90%&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="attr">lint-test-job:</span>   <span class="comment"># This job also runs in the test stage.</span></span><br><span class="line">  <span class="attr">stage:</span> <span class="string">test</span>    <span class="comment"># It can run at the same time as unit-test-job (in parallel).</span></span><br><span class="line">  <span class="attr">only:</span></span><br><span class="line">    <span class="bullet">-</span> <span class="string">develop</span></span><br><span class="line">  <span class="attr">tags:</span></span><br><span class="line">    <span class="bullet">-</span> <span class="string">&quot;shell&quot;</span></span><br><span class="line">  <span class="attr">script:</span></span><br><span class="line">    <span class="bullet">-</span> <span class="string">echo</span> <span class="string">&quot;Linting code... This will take about 10 seconds.&quot;</span></span><br><span class="line">    <span class="bullet">-</span> <span class="string">sleep</span> <span class="number">10</span></span><br><span class="line">    <span class="bullet">-</span> <span class="string">echo</span> <span class="string">&quot;No lint issues found.&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="attr">deploy-job:</span>      <span class="comment"># This job runs in the deploy stage.</span></span><br><span class="line">  <span class="attr">stage:</span> <span class="string">deploy</span>  <span class="comment"># It only runs when *both* jobs in the test stage complete successfully.</span></span><br><span class="line">  <span class="attr">only:</span></span><br><span class="line">    <span class="bullet">-</span> <span class="string">develop</span></span><br><span class="line">  <span class="attr">tags:</span></span><br><span class="line">    <span class="bullet">-</span> <span class="string">&quot;shell&quot;</span></span><br><span class="line">  <span class="attr">script:</span></span><br><span class="line">    <span class="bullet">-</span> <span class="string">echo</span> <span class="string">&quot;Deploying application...&quot;</span></span><br><span class="line">    <span class="bullet">-</span> <span class="string">echo</span> <span class="string">&quot;Application successfully deployed.&quot;</span></span><br></pre></td></tr></table></figure>
+<p>之後做 <code>git push</code>，GitLab 便會自動用前面註冊的 runner 配對執行 CI jobs。之後可以在側邊欄 <code>CI/CD</code> 選單查看測試結果。</p>
+<hr class="footnotes-sep">
+<section class="footnotes">
+<ol class="footnotes-list">
+<li id="fn1" class="footnote-item"><p>如果建立帳號後沒有收到確認信，請檢查您的 SMTP 設定。 <a href="#fnref1" class="footnote-backref">↩︎</a></p>
+</li>
+<li id="fn2" class="footnote-item"><p>管理員帳號的 Access level 記得選擇 Administrator。 <a href="#fnref2" class="footnote-backref">↩︎</a></p>
+</li>
+<li id="fn3" class="footnote-item"><p>如果 Host 環境是 VM，需安裝 VMware Tools 或 Guest Additions 等工具。 <a href="#fnref3" class="footnote-backref">↩︎</a></p>
+</li>
+<li id="fn4" class="footnote-item"><p><a href="https://docs.gitlab.com/ee/development/cicd/templates.html">GitLab CI 模板撰寫指南</a> <a href="#fnref4" class="footnote-backref">↩︎</a></p>
+</li>
+</ol>
+</section>
+]]></content>
+      <categories>
+        <category>DevOps筆記</category>
+      </categories>
+      <tags>
+        <tag>linux,rocky-linux,gitlab</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>從 CentOS 7 升級遷移到 Rocky Linux 8</title>
+    <url>/2022/08/01/Upgrade-from-CentOS-7-to-Rocky-Linux/</url>
+    <content><![CDATA[<p>由於 CentOS 7 即將在 2024 年 6 月 30 日後進入 End Of Life，而 Rocky Linux 由 CentOS 8 分支而來，同樣是基於 RHEL 8 而來的下游衍生版本，是一個升級作為替代的好選擇，因此希望藉由這篇文章整理並分享我嘗試升級的操作過程。</p>
+<span id="more"></span>
+<p>以下操作過程<strong>不保證</strong>系統完整性，請養成操作前備份資料的習慣，並<strong>避免直接在正式營運環境做嘗試</strong></p>
+<p>整個升級過程大致可以切分為以下部分：</p>
+<ol>
+<li>從 CentOS Linux 7 升級到 CentOS Linux 8</li>
+<li>從 CentOS Linux 8 遷移到 Rocky Linux 8</li>
+</ol>
+<hr>
+<h2 id="從-CentOS-Linux-7-升級到-CentOS-Linux-8"><a class="header-anchor" href="#從-CentOS-Linux-7-升級到-CentOS-Linux-8"></a>從 CentOS Linux 7 升級到 CentOS Linux 8</h2>
+<p>這一步的主要目的為將系統更新為 CentOS 8.5，才能順利遷移到 Rocky Linux。</p>
+<h3 id="更新-CentOS-7"><a class="header-anchor" href="#更新-CentOS-7"></a>更新 CentOS 7</h3>
+<p>先更新系統現有軟體包</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">sudo yum update -y</span><br><span class="line">sudo reboot</span><br></pre></td></tr></table></figure>
+<p>安裝 <code>epel-release</code> 以安裝第三方擴充資源庫</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">sudo yum install -y epel-release</span><br></pre></td></tr></table></figure>
+<p>安裝升級所需工具</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">sudo yum install -y rpmconf yum-utils</span><br></pre></td></tr></table></figure>
+<p>檢查軟體包或配置是否有衝突，如果有衝突可選擇保留原有版本或以開發者版本覆蓋</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">sudo rpmconf -a</span><br></pre></td></tr></table></figure>
+<p>列出未被依賴以及不在來源資源庫的軟體包</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">sudo package-cleanup --leaves</span><br><span class="line">sudo package-cleanup --orphans</span><br></pre></td></tr></table></figure>
+<p>如果有不需要的軟體包，可以使用以下指令清除</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">sudo yum remove -y &lt;package&gt;</span><br></pre></td></tr></table></figure>
+<p>安裝 DNF，為 YUM 下一代的軟體包管理工具</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">sudo yum install -y dnf</span><br></pre></td></tr></table></figure>
+<p>有了 DNF，就可以移除 YUM 了</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">sudo yum remove yum yum-metadata-parser</span><br></pre></td></tr></table></figure>
+<p>清除 YUM 相關設定檔</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">sudo <span class="built_in">rm</span> -Rf /etc/yum</span><br></pre></td></tr></table></figure>
+<p>接著用 DNF 做一次 CentOS 7 系統更新</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">sudo dnf upgrade -y</span><br></pre></td></tr></table></figure>
+<h3 id="更新至-CentOS-8"><a class="header-anchor" href="#更新至-CentOS-8"></a>更新至 CentOS 8</h3>
+<p>安裝 CentOS 8 資源庫</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">sudo dnf install http://vault.centos.org/8.5.2111/BaseOS/x86_64/os/Packages/&#123;centos-linux-repos-8-3.el8.noarch.rpm,centos-linux-release-8.5-1.2111.el8.noarch.rpm,centos-gpg-keys-8-3.el8.noarch.rpm&#125;</span><br></pre></td></tr></table></figure>
+<p>更新 epel-release</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">dnf -y upgrade https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm</span><br></pre></td></tr></table></figure>
+<p>備份及更新來源資源庫檔</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="built_in">cd</span> /etc/yum.repos.d</span><br><span class="line">sudo <span class="built_in">mkdir</span> backups</span><br><span class="line">sudo <span class="built_in">mv</span> CentOS-* backups</span><br><span class="line"></span><br><span class="line"><span class="comment"># Create new for CentOS BaseOS repo</span></span><br><span class="line">sudo <span class="built_in">tee</span> CentOS-Linux-BaseOS.repo&lt;&lt;<span class="string">EOM</span></span><br><span class="line"><span class="string">[baseos]</span></span><br><span class="line"><span class="string">name=CentOS Linux \$releasever - BaseOS</span></span><br><span class="line"><span class="string">baseurl=http://vault.centos.org/8.5.2111/BaseOS/\$basearch/os/</span></span><br><span class="line"><span class="string">gpgcheck=1</span></span><br><span class="line"><span class="string">enabled=1</span></span><br><span class="line"><span class="string">gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-centosofficial</span></span><br><span class="line"><span class="string">EOM</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># Create new for CentOS AppStream repo</span></span><br><span class="line">sudo <span class="built_in">tee</span> CentOS-Linux-AppStream.repo&lt;&lt;<span class="string">EOM</span></span><br><span class="line"><span class="string">[appstream]</span></span><br><span class="line"><span class="string">name=CentOS Linux \$releasever - AppStream</span></span><br><span class="line"><span class="string">baseurl=http://vault.centos.org/8.5.2111/AppStream/\$basearch/os/</span></span><br><span class="line"><span class="string">gpgcheck=1</span></span><br><span class="line"><span class="string">enabled=1</span></span><br><span class="line"><span class="string">gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-centosofficial</span></span><br><span class="line"><span class="string">EOM</span></span><br></pre></td></tr></table></figure>
+<p>移除暫存檔</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">dnf clean all</span><br></pre></td></tr></table></figure>
+<p>移除舊版本 kernel 及衝突軟體包</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">sudo rpm -e `rpm -q kernel` --nodeps</span><br><span class="line">sudo rpm -e `rpm -q kernel-devel` --nodeps</span><br><span class="line">sudo rpm -e --nodeps sysvinit-tools</span><br></pre></td></tr></table></figure>
+<p>安裝 CentOS 8 系統更新</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">dnf -y --releasever=8 --allowerasing --<span class="built_in">setopt</span>=deltarpm=<span class="literal">false</span> distro-sync</span><br></pre></td></tr></table></figure>
+<ul>
+<li>如果遇到 conflicting requests 錯誤，代表該軟體包可能在 CentOS 8 更改名稱導致更新時未找到相容版本依賴的軟體包，可以先透過 <code>dnf remove</code> 指令將衝突的舊軟體包移除後，再重新透過以上指令更新</li>
+</ul>
+<p>安裝新版本 kernel</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">dnf install -y kernel-core</span><br></pre></td></tr></table></figure>
+<p>最後以最精簡內容安裝 CentOS 8</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">dnf -y groupupdate <span class="string">&quot;Core&quot;</span> <span class="string">&quot;Minimal Install&quot;</span></span><br></pre></td></tr></table></figure>
+<p>安裝後重新啟動系統，檢查作業系統及 kernel 版本是否已更新。</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ <span class="built_in">cat</span> /etc/centos-release</span><br><span class="line">CentOS Linux release 8.5.2111</span><br><span class="line">$ <span class="built_in">uname</span> -r</span><br><span class="line">4.18.0-348.7.1.el8_5.x86_64</span><br></pre></td></tr></table></figure>
+<hr>
+<h2 id="從-CentOS-Linux-8-遷移到-Rocky-Linux-8"><a class="header-anchor" href="#從-CentOS-Linux-8-遷移到-Rocky-Linux-8"></a>從 CentOS Linux 8 遷移到 Rocky Linux 8</h2>
+<p>這一部分就相當簡單，已經有現成腳本可以使用。</p>
+<h3 id="下載遷移腳本"><a class="header-anchor" href="#下載遷移腳本"></a>下載遷移腳本</h3>
+<p>需先安裝 wget 下載工具</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">sudo dnf -y install wget</span><br><span class="line">wget https://raw.githubusercontent.com/rocky-linux/rocky-tools/main/migrate2rocky/migrate2rocky.sh</span><br></pre></td></tr></table></figure>
+<h3 id="執行遷移腳本"><a class="header-anchor" href="#執行遷移腳本"></a>執行遷移腳本</h3>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">sudo <span class="built_in">chmod</span> a+x migrate2rocky.sh</span><br><span class="line">sudo migrate2rocky.sh -r</span><br></pre></td></tr></table></figure>
+<p>執行完畢後需要重新啟動系統</p>
+<p>登入後，可以用以下指令確認更新結果</p>
+<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line"><span class="meta prompt_"># </span><span class="language-bash"><span class="built_in">cat</span> /etc/os-release</span></span><br><span class="line">NAME=&quot;Rocky Linux&quot;</span><br><span class="line">VERSION=&quot;8.6 (Green Obsidian)&quot;</span><br><span class="line">ID=&quot;rocky&quot;</span><br><span class="line">ID_LIKE=&quot;rhel centos fedora&quot;</span><br><span class="line">VERSION_ID=&quot;8.6&quot;</span><br><span class="line">PLATFORM_ID=&quot;platform:el8&quot;</span><br><span class="line">PRETTY_NAME=&quot;Rocky Linux 8.6 (Green Obsidian)&quot;</span><br><span class="line">ANSI_COLOR=&quot;0;32&quot;</span><br><span class="line">CPE_NAME=&quot;cpe:/o:rocky:rocky:8:GA&quot;</span><br><span class="line">HOME_URL=&quot;https://rockylinux.org/&quot;</span><br><span class="line">BUG_REPORT_URL=&quot;https://bugs.rockylinux.org/&quot;</span><br><span class="line">ROCKY_SUPPORT_PRODUCT=&quot;Rocky Linux&quot;</span><br><span class="line">ROCKY_SUPPORT_PRODUCT_VERSION=&quot;8&quot;</span><br><span class="line">REDHAT_SUPPORT_PRODUCT=&quot;Rocky Linux&quot;</span><br><span class="line">REDHAT_SUPPORT_PRODUCT_VERSION=&quot;8&quot;</span><br></pre></td></tr></table></figure>
+]]></content>
+      <categories>
+        <category>DevOps筆記</category>
+      </categories>
+      <tags>
+        <tag>linux,centos,rocky-linux</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>CentOS 7 GitLab + GitLab Runner + GitLab CI 建置教學</title>
+    <url>/2022/07/18/gitlab-docker-runner-ci-tutorial/</url>
+    <content><![CDATA[<p>本文示範如何在 CentOS 7 於內部網路自行架設 GitLab 及 GitLab Runner 服務，並將 GitLab 加入 git remote，最後撰寫 <code>.gitlab-ci.yml</code>，透過 GitLab Runner 在 git push 時自動執行 CI 腳本。</p>
+<span id="more"></span>
+<hr>
+<h2 id="設定-Host-環境-v2"><a class="header-anchor" href="#設定-Host-環境-v2"></a>設定 Host 環境</h2>
+<h3 id="編輯-sshd-config-v2"><a class="header-anchor" href="#編輯-sshd-config-v2"></a>編輯 <code>sshd_config</code></h3>
+<p>透過編輯 <code>/etc/ssh/sshd_config</code> 檔案來更改 Host 系統使用的 <code>ssh</code> port，避免後續透過 <code>ssh</code> 與 GitLab 互動時會與系統衝突， <code>AddressFamily</code> 改為 <code>inet</code> 表示僅允許透過 ipv4 連線</p>
+<figure class="highlight diff"><table><tr><td class="code"><pre><span class="line"><span class="deletion">- Port 22</span></span><br><span class="line"><span class="addition">+ Port 2222</span></span><br><span class="line"><span class="deletion">- AddressFamily any</span></span><br><span class="line"><span class="addition">+ AddressFamily inet</span></span><br></pre></td></tr></table></figure>
+<ul>
+<li>可以先加上 port 2222，確定可以用 port 2222 進行 <code>ssh</code> 連線後，再刪除 port 22 這行</li>
+</ul>
+<p>接著透過 <code>semanage</code> 將 port 2222 加入 ssh 使用的 port 清單後重啟 sshd</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">semanage port -a -t ssh_port_t -p tcp 2222</span><br><span class="line">semanage port -l | grep ssh</span><br><span class="line">systemctl restart sshd</span><br></pre></td></tr></table></figure>
+<p>如果出現 <code>semanage: command not found</code> 錯誤，表示系統未安裝此工具程式，可透過以下指令安裝解決</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">yum install -y policycoreutils</span><br></pre></td></tr></table></figure>
+<h3 id="設定防火牆-v2"><a class="header-anchor" href="#設定防火牆-v2"></a>設定防火牆</h3>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">firewall-cmd --add-port=2222/tcp --permanent</span><br><span class="line">firewall-cmd --add-port=443/tcp --permanent</span><br><span class="line">firewall-cmd --reload</span><br></pre></td></tr></table></figure>
+<hr>
+<h2 id="使用-Docker-Compose-建置-GitLab"><a class="header-anchor" href="#使用-Docker-Compose-建置-GitLab"></a>使用 Docker Compose 建置 GitLab</h2>
+<h3 id="安裝-Docker-及-Docker-Compose"><a class="header-anchor" href="#安裝-Docker-及-Docker-Compose"></a>安裝 Docker 及 Docker Compose</h3>
+<p>安裝 yum-utils 以使用 yum-config-manager</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">sudo yum install -y yum-utils</span><br></pre></td></tr></table></figure>
+<p>加入 Docker repo</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">sudo yum-config-manager \</span><br><span class="line">  --add-repo \</span><br><span class="line">  https://download.docker.com/linux/centos/docker-ce.repo</span><br><span class="line">sudo yum install docker-ce docker-ce-cli containerd.io docker-compose-plugin</span><br></pre></td></tr></table></figure>
+<h3 id="啟動-Docker-Engine"><a class="header-anchor" href="#啟動-Docker-Engine"></a>啟動 Docker Engine</h3>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">sudo systemctl start docker</span><br></pre></td></tr></table></figure>
+<p>在任意目錄如 <code>/root/gitlab/</code> 下建立並編輯 <code>docker-comose.yml</code></p>
+<figure class="highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="attr">version:</span> <span class="string">&#x27;3.6&#x27;</span></span><br><span class="line"><span class="attr">services:</span></span><br><span class="line">  <span class="attr">web:</span></span><br><span class="line">    <span class="attr">image:</span> <span class="string">gitlab/gitlab-ee:latest</span></span><br><span class="line">    <span class="attr">container_name:</span> <span class="string">gitlab</span></span><br><span class="line">    <span class="attr">restart:</span> <span class="string">always</span></span><br><span class="line">    <span class="attr">hostname:</span> <span class="string">&#x27;gitlab&#x27;</span></span><br><span class="line">    <span class="attr">environment:</span></span><br><span class="line">      <span class="attr">GITLAB_OMNIBUS_CONFIG:</span> <span class="string">|</span></span><br><span class="line"><span class="string">        external_url &#x27;https://gitlab&#x27;</span></span><br><span class="line"><span class="string">        # SMTP server 設定</span></span><br><span class="line"><span class="string">        gitlab_rails[&#x27;gitlab_shell_ssh_port&#x27;] = 22</span></span><br><span class="line"><span class="string">        gitlab_rails[&#x27;smtp_enable&#x27;] = true</span></span><br><span class="line"><span class="string">        gitlab_rails[&#x27;smtp_address&#x27;] = &#x27;&lt;smtp server url&gt;&#x27;</span></span><br><span class="line"><span class="string">        gitlab_rails[&#x27;smtp_port&#x27;] = 587</span></span><br><span class="line"><span class="string">        gitlab_rails[&#x27;smtp_domain&#x27;] = &#x27;&lt;smtp server domain name&gt;&#x27;</span></span><br><span class="line"><span class="string">        gitlab_rails[&#x27;smtp_user_name&#x27;] = &quot;&lt;smtp username&gt;&quot;</span></span><br><span class="line"><span class="string">        gitlab_rails[&#x27;smtp_password&#x27;] = &quot;&lt;smtp password&gt;&quot;</span></span><br><span class="line"><span class="string">        gitlab_rails[&#x27;smtp_authentication&#x27;] = &#x27;login&#x27;</span></span><br><span class="line"><span class="string">        gitlab_rails[&#x27;gitlab_email_from&#x27;] = &#x27;noreply@my-gitlab&#x27;</span></span><br><span class="line"><span class="string">        gitlab_rails[&#x27;gitlab_email_reply_to&#x27;] = &#x27;root@my-gitlab&#x27;</span></span><br><span class="line"><span class="string">        gitlab_rails[&#x27;smtp_enable_starttls_auto&#x27;] = true</span></span><br><span class="line"><span class="string">        gitlab_rails[&#x27;smtp_tls&#x27;] = false</span></span><br><span class="line"><span class="string">        gitlab_rails[&#x27;smtp_pool&#x27;] = false</span></span><br><span class="line"><span class="string"></span>    <span class="attr">ports:</span></span><br><span class="line">      <span class="bullet">-</span> <span class="string">&#x27;80:80&#x27;</span></span><br><span class="line">      <span class="bullet">-</span> <span class="string">&#x27;443:443&#x27;</span></span><br><span class="line">      <span class="bullet">-</span> <span class="string">&#x27;22:22&#x27;</span></span><br><span class="line">    <span class="attr">volumes:</span></span><br><span class="line">      <span class="bullet">-</span> <span class="string">&#x27;./gitlab_data/config:/etc/gitlab&#x27;</span></span><br><span class="line">      <span class="bullet">-</span> <span class="string">&#x27;./gitlab_data/logs:/var/log/gitlab&#x27;</span></span><br><span class="line">      <span class="bullet">-</span> <span class="string">&#x27;./gitlab_data/data:/var/opt/gitlab&#x27;</span></span><br><span class="line">    <span class="attr">shm_size:</span> <span class="string">&#x27;256m&#x27;</span></span><br></pre></td></tr></table></figure>
+<p>接著用以下指令啟動容器</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">docker compose up -d</span><br></pre></td></tr></table></figure>
+<ul>
+<li>-d: 表示在背景執行</li>
+</ul>
+<p>查看容器 log</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">docker logs -f gitlab</span><br></pre></td></tr></table></figure>
+<ul>
+<li>-f (–follow): 表示追蹤並即時印出新的log</li>
+</ul>
+<p>日後如果要更改設定，可以選擇透過在 <code>GITLAB_OMNIBUS_CONFIG</code> 下修改後重上容器，或直接編輯 <code>gitlab_data/config/gitlab.rb</code> 做修改</p>
+<p>編輯完畢後執行</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">docker <span class="built_in">exec</span> -it gitlab gitlab-ctl reconfigure</span><br></pre></td></tr></table></figure>
+<hr>
+<h2 id="自簽憑證處理-v2"><a class="header-anchor" href="#自簽憑證處理-v2"></a>自簽憑證處理</h2>
+<p>在透過 Omnibus 設定建立的 GitLab 容器，預設會透過 Let’s Encrypt 產生自簽憑證，後續註冊 GitLab Runner 時可能會遇到 <code>x509: certificate relies on legacy Common Name field, use SANs instead</code> 的問題，這是由於自動產生的憑證缺少 SAN 欄位，需要重新簽署帶有 SAN (Subject Alternative Names) 欄位設定的憑證。</p>
+<p>建立並編輯 <code>gitlab_data/config/ssl/ssl.conf</code></p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">[req]</span><br><span class="line">prompt = no</span><br><span class="line">default_md = sha256</span><br><span class="line">default_bits = 2048</span><br><span class="line">distinguished_name = dn</span><br><span class="line">x509_extensions = v3_req</span><br><span class="line"></span><br><span class="line">[dn]</span><br><span class="line">[req]</span><br><span class="line">prompt = no</span><br><span class="line">default_md = sha256</span><br><span class="line">default_bits = 2048</span><br><span class="line">distinguished_name = dn</span><br><span class="line">x509_extensions = v3_req</span><br><span class="line"></span><br><span class="line">[dn]</span><br><span class="line">C = TW</span><br><span class="line">ST = Taiwan</span><br><span class="line">L = Taipei</span><br><span class="line">O = gitlab Inc.</span><br><span class="line">OU = IT Department</span><br><span class="line">emailAddress = &lt;YOUR EMAIL&gt;</span><br><span class="line">CN = gitlab</span><br><span class="line"></span><br><span class="line">[v3_req]</span><br><span class="line">subjectAltName = @alt_names</span><br><span class="line"></span><br><span class="line">[alt_names]</span><br><span class="line">DNS.1 = gitlab</span><br><span class="line">DNS.2 = *.gitlab</span><br><span class="line">IP.1  = &lt;YOUR SERVER IP&gt;</span><br></pre></td></tr></table></figure>
+<p>由以下指令產生新憑證</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">openssl req -x509 -new -nodes -sha256 -utf8 -days 3650 -newkey rsa:2048 -keyout gitlab.key -out gitlab.crt -config ssl.conf</span><br></pre></td></tr></table></figure>
+<p>憑證公私鑰檔名應該與 <code>docker-compose.yml</code> 中的 <code>external_url</code> 設定一致。</p>
+<hr>
+<h2 id="設定-GitLab-v2"><a class="header-anchor" href="#設定-GitLab-v2"></a>設定 GitLab</h2>
+<h3 id="創建管理員帳號-v2"><a class="header-anchor" href="#創建管理員帳號-v2"></a>創建管理員帳號</h3>
+<p>預設管理員帳號為 <code>root</code>，密碼則存在 <code>gitlab_data/config/initial_root_password</code> 檔案內，建議登入後點選左上角 <code>Menu</code><br>
+→ <code>Admin</code> → <code>new user</code> 創建自己的管理員帳號<sup class="footnote-ref"><a href="#fn1" id="fnref1">[1]</a></sup><sup class="footnote-ref"><a href="#fn2" id="fnref2">[2]</a></sup>，並透過確認信所附的連結設定密碼及啟用。</p>
+<p><img src="/2022/07/18/gitlab-docker-runner-ci-tutorial/image01.png" alt="創建使用者畫面"></p>
+<h3 id="創建-Project-v2"><a class="header-anchor" href="#創建-Project-v2"></a>創建 Project</h3>
+<p>有以下幾種做法：</p>
+<ul>
+<li>從 GitLab 網頁 UI 建立空白 Project</li>
+<li>使用本地 git repo 創建</li>
+<li>從 GitHub 等外部 repo 匯入</li>
+</ul>
+<p>本文以使用本地 git repo 做為示範，詳見下段。</p>
+<hr>
+<h2 id="將-GitLab-加入開發環境-v2"><a class="header-anchor" href="#將-GitLab-加入開發環境-v2"></a>將 GitLab 加入開發環境</h2>
+<p>由於是架設在內部網路，建議操作 git 使用 <code>ssh</code> 而不用 <code>https</code> ，可以避開很多TLS 憑證衍生錯誤問題。</p>
+<h3 id="設定-SSH-Key-v2"><a class="header-anchor" href="#設定-SSH-Key-v2"></a>設定 SSH Key</h3>
+<p>開啟開發環境的 <code>~/.ssh</code> 目錄下的 ssh public key 檔案（如 <code>id_rsa.pub</code> 或 <code>id_ed25519.pub</code>），複製其中內容<sup class="footnote-ref"><a href="#fn3" id="fnref3">[3]</a></sup>。</p>
+<p>如 MacOS 可以使用以下指令：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="built_in">cat</span> ~/.ssh/id_ed25519.pub | pbcopy</span><br></pre></td></tr></table></figure>
+<p>如果目錄下沒有公鑰檔，可以用以下指令創建：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">ssh-keygen -t ed25519 -C <span class="string">&#x27;&lt;comment&gt;&#x27;</span></span><br></pre></td></tr></table></figure>
+<ul>
+<li>其中 -C 標示該 key 的使用者資訊，通常會是 <code>&lt;username&gt;@&lt;hostname&gt;.&lt;domain&gt;</code> ，或是使用者的 email address</li>
+</ul>
+<p>點選畫面右上角個人圖示 → <code>Preferences</code>，再點擊畫面左方列表 <code>SSH Keys</code>，將剛才複製的 SSH Key 貼到Key欄位，可一併設定有效期限，最後點擊 <code>Add key</code>。</p>
+<p><img src="/2022/07/18/gitlab-docker-runner-ci-tutorial/image02.png" alt="SSH Key 設定畫面"></p>
+<h3 id="設定-git-remote-及創建-GitLab-project-v2"><a class="header-anchor" href="#設定-git-remote-及創建-GitLab-project-v2"></a>設定 git remote 及創建 GitLab project</h3>
+<p>以既有本地檔案初始化 git 並創建 GitLab project</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="built_in">cd</span> &lt;project_folder&gt;</span><br><span class="line">git init --initial-branch=main</span><br><span class="line">git remote add origin git@&lt;GitLab URL&gt;:&lt;username&gt;/&lt;your repo name&gt;.git</span><br><span class="line">git add .</span><br><span class="line">git commit -m <span class="string">&quot;Initial commit&quot;</span></span><br><span class="line">git push -u origin main</span><br></pre></td></tr></table></figure>
+<hr>
+<h2 id="建置-GitLab-Runner-v2"><a class="header-anchor" href="#建置-GitLab-Runner-v2"></a>建置 GitLab Runner</h2>
+<h3 id="編輯-docker-compose-設定檔-v2"><a class="header-anchor" href="#編輯-docker-compose-設定檔-v2"></a>編輯 docker-compose 設定檔</h3>
+<p>在 <code>docker-compose.yml</code> 中加入以下段落：</p>
+<figure class="highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="attr">gitlab-runner:</span></span><br><span class="line">  <span class="attr">image:</span> <span class="string">gitlab/gitlab-runner:latest</span></span><br><span class="line">  <span class="attr">container_name:</span> <span class="string">&#x27;gitlab-runner&#x27;</span></span><br><span class="line">  <span class="attr">environment:</span></span><br><span class="line">    <span class="bullet">-</span> <span class="string">CI_SERVER_URL=https://gitlab</span></span><br><span class="line">  <span class="attr">volumes:</span></span><br><span class="line">    <span class="bullet">-</span> <span class="string">&#x27;/var/run/docker.sock:/var/run/docker.sock&#x27;</span></span><br><span class="line">    <span class="bullet">-</span> <span class="string">&#x27;./runner_data:/etc/gitlab-runner&#x27;</span></span><br><span class="line">  <span class="attr">restart:</span> <span class="string">always</span></span><br></pre></td></tr></table></figure>
+<p>重新下上容器：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">docker compose down</span><br><span class="line">docker compose up -d</span><br></pre></td></tr></table></figure>
+<p>在註冊 Runner 之前，需要複製一份前面步驟產生的 GitLab server 憑證 <code>gitlab.crt</code> 到 <code>./runner_data/certs/</code> 底下。</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="built_in">touch</span> ./runner_data/config.toml</span><br><span class="line"><span class="built_in">mkdir</span> ./runner_data/certs</span><br><span class="line"><span class="built_in">cp</span> ./gitlab_data/config/ssl/gitlab.crt ./runner_data/certs/</span><br></pre></td></tr></table></figure>
+<h3 id="註冊-GitLab-Runner-v2"><a class="header-anchor" href="#註冊-GitLab-Runner-v2"></a>註冊 GitLab Runner</h3>
+<p>在 Project 頁面，點擊畫面左方列表 Settings → <code>CI/CD</code>，再點擊 Runners 右邊的 <code>Expand</code>，複製 <code>registration token</code>。執行以下指令並依提示填入內容。</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">docker <span class="built_in">exec</span> -it gitlab-runner gitlab-runner register --tls-ca-file /etc/gitlab-runner/certs/gitlab.crt</span><br></pre></td></tr></table></figure>
+<h3 id="撰寫-GitLab-CI-腳本-v2"><a class="header-anchor" href="#撰寫-GitLab-CI-腳本-v2"></a>撰寫 GitLab CI 腳本</h3>
+<p>依照官方提供範例<sup class="footnote-ref"><a href="#fn4" id="fnref4">[4]</a></sup>在專案資料夾根目錄創建並編輯 <code>.gitlab-ci.yml</code>。</p>
+<figure class="highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="attr">stages:</span>          <span class="comment"># List of stages for jobs, and their order of execution</span></span><br><span class="line">  <span class="bullet">-</span> <span class="string">build</span></span><br><span class="line">  <span class="bullet">-</span> <span class="string">test</span></span><br><span class="line">  <span class="bullet">-</span> <span class="string">deploy</span></span><br><span class="line"></span><br><span class="line"><span class="attr">build-job:</span>       <span class="comment"># This job runs in the build stage, which runs first.</span></span><br><span class="line">  <span class="attr">stage:</span> <span class="string">build</span></span><br><span class="line">  <span class="attr">only:</span></span><br><span class="line">    <span class="bullet">-</span> <span class="string">develop</span></span><br><span class="line">  <span class="attr">tags:</span></span><br><span class="line">    <span class="bullet">-</span> <span class="string">&quot;shell&quot;</span></span><br><span class="line">  <span class="attr">script:</span></span><br><span class="line">    <span class="bullet">-</span> <span class="string">echo</span> <span class="string">&quot;Compiling the code...&quot;</span></span><br><span class="line">    <span class="bullet">-</span> <span class="string">echo</span> <span class="string">&quot;Compile complete.&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="attr">unit-test-job:</span>   <span class="comment"># This job runs in the test stage.</span></span><br><span class="line">  <span class="attr">stage:</span> <span class="string">test</span>    <span class="comment"># It only starts when the job in the build stage completes successfully.</span></span><br><span class="line">  <span class="attr">only:</span></span><br><span class="line">    <span class="bullet">-</span> <span class="string">develop</span></span><br><span class="line">  <span class="attr">tags:</span></span><br><span class="line">    <span class="bullet">-</span> <span class="string">&quot;shell&quot;</span></span><br><span class="line">  <span class="attr">script:</span></span><br><span class="line">    <span class="bullet">-</span> <span class="string">echo</span> <span class="string">&quot;Running unit tests... This will take about 60 seconds.&quot;</span></span><br><span class="line">    <span class="bullet">-</span> <span class="string">sleep</span> <span class="number">60</span></span><br><span class="line">    <span class="bullet">-</span> <span class="string">echo</span> <span class="string">&quot;Code coverage is 90%&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="attr">lint-test-job:</span>   <span class="comment"># This job also runs in the test stage.</span></span><br><span class="line">  <span class="attr">stage:</span> <span class="string">test</span>    <span class="comment"># It can run at the same time as unit-test-job (in parallel).</span></span><br><span class="line">  <span class="attr">only:</span></span><br><span class="line">    <span class="bullet">-</span> <span class="string">develop</span></span><br><span class="line">  <span class="attr">tags:</span></span><br><span class="line">    <span class="bullet">-</span> <span class="string">&quot;shell&quot;</span></span><br><span class="line">  <span class="attr">script:</span></span><br><span class="line">    <span class="bullet">-</span> <span class="string">echo</span> <span class="string">&quot;Linting code... This will take about 10 seconds.&quot;</span></span><br><span class="line">    <span class="bullet">-</span> <span class="string">sleep</span> <span class="number">10</span></span><br><span class="line">    <span class="bullet">-</span> <span class="string">echo</span> <span class="string">&quot;No lint issues found.&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="attr">deploy-job:</span>      <span class="comment"># This job runs in the deploy stage.</span></span><br><span class="line">  <span class="attr">stage:</span> <span class="string">deploy</span>  <span class="comment"># It only runs when *both* jobs in the test stage complete successfully.</span></span><br><span class="line">  <span class="attr">only:</span></span><br><span class="line">    <span class="bullet">-</span> <span class="string">develop</span></span><br><span class="line">  <span class="attr">tags:</span></span><br><span class="line">    <span class="bullet">-</span> <span class="string">&quot;shell&quot;</span></span><br><span class="line">  <span class="attr">script:</span></span><br><span class="line">    <span class="bullet">-</span> <span class="string">echo</span> <span class="string">&quot;Deploying application...&quot;</span></span><br><span class="line">    <span class="bullet">-</span> <span class="string">echo</span> <span class="string">&quot;Application successfully deployed.&quot;</span></span><br></pre></td></tr></table></figure>
+<p>之後做 <code>git push</code>，GitLab 便會自動用前面註冊的 runner 配對執行 CI jobs。之後可以在側邊欄 <code>CI/CD</code> 選單查看測試結果。</p>
+<hr class="footnotes-sep">
+<section class="footnotes">
+<ol class="footnotes-list">
+<li id="fn1" class="footnote-item"><p>如果建立帳號後沒有收到確認信，請檢查您的 SMTP 設定。 <a href="#fnref1" class="footnote-backref">↩︎</a></p>
+</li>
+<li id="fn2" class="footnote-item"><p>管理員帳號的 Access level 記得選擇 Administrator。 <a href="#fnref2" class="footnote-backref">↩︎</a></p>
+</li>
+<li id="fn3" class="footnote-item"><p>如果 Host 環境是 VM，需安裝 VMware Tools 或 Guest Additions 等工具。 <a href="#fnref3" class="footnote-backref">↩︎</a></p>
+</li>
+<li id="fn4" class="footnote-item"><p><a href="https://docs.gitlab.com/ee/development/cicd/templates.html">GitLab CI 模板撰寫指南</a> <a href="#fnref4" class="footnote-backref">↩︎</a></p>
+</li>
+</ol>
+</section>
+]]></content>
+      <categories>
+        <category>DevOps 筆記</category>
+      </categories>
+      <tags>
+        <tag>linux</tag>
+        <tag>centos</tag>
+        <tag>docker</tag>
+        <tag>gitlab</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Hello World</title>
+    <url>/2022/07/08/hello-world/</url>
+    <content><![CDATA[<p>Welcome to <a href="https://hexo.io/">Hexo</a>! This is your very first post. Check <a href="https://hexo.io/docs/">documentation</a> for more info. If you get any problems when using Hexo, you can find the answer in <a href="https://hexo.io/docs/troubleshooting.html">troubleshooting</a> or you can ask me on <a href="https://github.com/hexojs/hexo/issues">GitHub</a>.</p>
+<span id="more"></span>
+<h2 id="Quick-Start"><a class="header-anchor" href="#Quick-Start"></a>Quick Start</h2>
+<h3 id="Create-a-new-post"><a class="header-anchor" href="#Create-a-new-post"></a>Create a new post</h3>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ hexo new <span class="string">&quot;My New Post&quot;</span></span><br></pre></td></tr></table></figure>
+<p>More info: <a href="https://hexo.io/docs/writing.html">Writing</a></p>
+<h3 id="Run-server"><a class="header-anchor" href="#Run-server"></a>Run server</h3>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ hexo server</span><br></pre></td></tr></table></figure>
+<p>More info: <a href="https://hexo.io/docs/server.html">Server</a></p>
+<h3 id="Generate-static-files"><a class="header-anchor" href="#Generate-static-files"></a>Generate static files</h3>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ hexo generate</span><br></pre></td></tr></table></figure>
+<p>More info: <a href="https://hexo.io/docs/generating.html">Generating</a></p>
+<h3 id="Deploy-to-remote-sites"><a class="header-anchor" href="#Deploy-to-remote-sites"></a>Deploy to remote sites</h3>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ hexo deploy</span><br></pre></td></tr></table></figure>
+<p>More info: <a href="https://hexo.io/docs/one-command-deployment.html">Deployment</a></p>
+]]></content>
+  </entry>
+  <entry>
+    <title>以 systemd 服務達成開機自動執行 podman-compose</title>
+    <url>/2022/08/09/%E4%BB%A5-systemd-%E6%9C%8D%E5%8B%99%E9%81%94%E6%88%90%E9%96%8B%E6%A9%9F%E8%87%AA%E5%8B%95%E5%9F%B7%E8%A1%8C-podman-compose/</url>
+    <content><![CDATA[<p>一般執行 <code>podman run</code>, <code>podman-compose up</code> 的時候，都是只有單次的執行，如果系統因故重新開機，便需要手動重新執行容器。如果我們希望在開機時能夠自行執行定義在 compose file 裡的服務，這個時候可以運用撰寫 <code>systemd</code> 的服務檔。而 <code>podman-compose</code> 目前最新的開發中版本提供了 <code>systemd</code> 子命令，更是可以直接幫我們自動產生 podman-compose 服務對應的 systemd 服務檔，省去自行撰寫的功夫。</p>
+<span id="more"></span>
+<p>需要先將 podman-compose 更新至目前最新的開發中版本(1.0.4)，才能夠使用 <code>systemd</code> 子命令</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">pip3 install https://github.com/containers/podman-compose/archive/devel.tar.gz</span><br></pre></td></tr></table></figure>
+<p>先移動到 compose file 所在目錄，執行以下命令：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">podman-compose systemd --action create-unit</span><br></pre></td></tr></table></figure>
+<p>會自動依 compose file 所在目錄建立 <code>podman-compose@&lt;PROJECT&gt;.service</code></p>
+<p>之後執行以下命令將服務檔註冊至 systemd 並啟用：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">podman-compose -a register</span><br><span class="line">systemctl --user <span class="built_in">enable</span> podman-compose@&lt;PROJECT&gt;.service</span><br></pre></td></tr></table></figure>
+<p>之後便可以如下列命令操作 podman-compose 服務</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">systemctl --user start podman-compose@&lt;PROJECT&gt;.service</span><br><span class="line">systemctl --user stop podman-compose@&lt;PROJECT&gt;.service</span><br><span class="line">systemctl --user status podman-compose@&lt;PROJECT&gt;.service</span><br></pre></td></tr></table></figure>
+]]></content>
+      <categories>
+        <category>Linux 筆記</category>
+      </categories>
+      <tags>
+        <tag>linux,podman,podman-compose,systemd</tag>
+      </tags>
+  </entry>
+</search>

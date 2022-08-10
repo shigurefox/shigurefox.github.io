@@ -2,9 +2,10 @@
 <html lang="zh-TW">
 <head>
   <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
-<meta name="theme-color" content="#222">
-<meta name="generator" content="Hexo 6.2.0">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 6.2.0">
+
+
   <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon.png">
   <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32.png">
   <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16.png">
@@ -14,15 +15,14 @@
 <link rel="stylesheet" href="/css/main.css">
 
 
-<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
-  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
 
-<script id="hexo-configurations">
-    var NexT = window.NexT || {};
-    var CONFIG = {"hostname":"shigurefox.github.io","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
-  </script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.2/css/all.min.css" integrity="sha256-xejo6yLi6vGtAjcMIsY8BHdKsLg7QynVlFMzdQgUuy8=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/fancybox/3.5.7/jquery.fancybox.min.css" integrity="sha256-Vzbj7sDDS/woiFS3uNKo8eIuni59rjyNGtXfstRzStA=" crossorigin="anonymous">
 
-  <meta name="description" content="本文示範如何在 CentOS 7 於內部網路自行架設 GitLab 及 GitLab Runner 服務，並將 GitLab 加入 git remote，最後撰寫 .gitlab-ci.yml，透過 GitLab Runner 在 git push 時自動執行 CI 腳本。">
+<script class="next-config" data-name="main" type="application/json">{"hostname":"shigurefox.github.io","root":"/","images":"/images","scheme":"Gemini","darkmode":false,"version":"8.12.3","exturl":false,"sidebar":{"position":"right","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"style":null,"show_result":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"prism":false,"i18n":{"placeholder":"搜尋...","empty":"我們無法找到任何有關 ${query} 的搜索結果","hits_time":"${hits} 找到 ${time} 個結果","hits":"找到 ${hits} 個結果"},"path":"/search.xml","localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false}}</script><script src="/js/config.js"></script>
+
+    <meta name="description" content="本文示範如何在 CentOS 7 於內部網路自行架設 GitLab 及 GitLab Runner 服務，並將 GitLab 加入 git remote，最後撰寫 .gitlab-ci.yml，透過 GitLab Runner 在 git push 時自動執行 CI 腳本。">
 <meta property="og:type" content="article">
 <meta property="og:title" content="CentOS 7 GitLab + GitLab Runner + GitLab CI 建置教學">
 <meta property="og:url" content="https://shigurefox.github.io/2022/07/18/gitlab-docker-runner-ci-tutorial/">
@@ -41,205 +41,257 @@
 <meta name="twitter:card" content="summary">
 <meta name="twitter:image" content="https://shigurefox.github.io/2022/07/18/gitlab-docker-runner-ci-tutorial/image01.png">
 
+
 <link rel="canonical" href="https://shigurefox.github.io/2022/07/18/gitlab-docker-runner-ci-tutorial/">
 
 
-<script id="page-configurations">
-  // https://hexo.io/docs/variables.html
-  CONFIG.page = {
-    sidebar: "",
-    isHome : false,
-    isPost : true,
-    lang   : 'zh-TW'
-  };
-</script>
 
-  <title>CentOS 7 GitLab + GitLab Runner + GitLab CI 建置教學 | Shigurefox's Den</title>
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-TW","comments":true,"permalink":"https://shigurefox.github.io/2022/07/18/gitlab-docker-runner-ci-tutorial/","path":"2022/07/18/gitlab-docker-runner-ci-tutorial/","title":"CentOS 7 GitLab + GitLab Runner + GitLab CI 建置教學"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>CentOS 7 GitLab + GitLab Runner + GitLab CI 建置教學 | Shigurefox's Den</title>
   
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-4DZZM5536W"></script>
-    <script>
-      if (CONFIG.hostname === location.hostname) {
-        window.dataLayer = window.dataLayer || [];
-        function gtag(){dataLayer.push(arguments);}
-        gtag('js', new Date());
-        gtag('config', 'G-4DZZM5536W');
-      }
-    </script>
-
+  <script class="next-config" data-name="google_analytics" type="application/json">{"tracking_id":"G-4DZZM5536W","only_pageview":false}</script>
+  <script src="/js/third-party/analytics/google-analytics.js"></script>
 
 
 
 
 
   <noscript>
-  <style>
-  .use-motion .brand,
-  .use-motion .menu-item,
-  .sidebar-inner,
-  .use-motion .post-block,
-  .use-motion .pagination,
-  .use-motion .comments,
-  .use-motion .post-header,
-  .use-motion .post-body,
-  .use-motion .collection-header { opacity: initial; }
-
-  .use-motion .site-title,
-  .use-motion .site-subtitle {
-    opacity: initial;
-    top: initial;
-  }
-
-  .use-motion .logo-line-before i { left: initial; }
-  .use-motion .logo-line-after i { right: initial; }
-  </style>
-</noscript>
-
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
 </head>
 
-<body itemscope itemtype="http://schema.org/WebPage">
-  <div class="container use-motion">
-    <div class="headband"></div>
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
 
+  <main class="main">
     <header class="header" itemscope itemtype="http://schema.org/WPHeader">
       <div class="header-inner"><div class="site-brand-container">
   <div class="site-nav-toggle">
-    <div class="toggle" aria-label="切換導航欄">
-      <span class="toggle-line toggle-line-first"></span>
-      <span class="toggle-line toggle-line-middle"></span>
-      <span class="toggle-line toggle-line-last"></span>
+    <div class="toggle" aria-label="切換導航欄" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
     </div>
   </div>
 
   <div class="site-meta">
 
     <a href="/" class="brand" rel="start">
-      <span class="logo-line-before"><i></i></span>
-      <h1 class="site-title">Shigurefox's Den</h1>
-      <span class="logo-line-after"><i></i></span>
+      <i class="logo-line"></i>
+      <p class="site-title">Shigurefox's Den</p>
+      <i class="logo-line"></i>
     </a>
   </div>
 
   <div class="site-nav-right">
     <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
     </div>
   </div>
 </div>
 
 
 
-
 <nav class="site-nav">
-  <ul id="menu" class="main-menu menu">
-        <li class="menu-item menu-item-home">
-
-    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首頁</a>
-
-  </li>
-        <li class="menu-item menu-item-about">
-
-    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>關於</a>
-
-  </li>
-        <li class="menu-item menu-item-tags">
-
-    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>標籤</a>
-
-  </li>
-        <li class="menu-item menu-item-categories">
-
-    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分類</a>
-
-  </li>
-        <li class="menu-item menu-item-archives">
-
-    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>歸檔</a>
-
-  </li>
+  <ul class="main-menu menu"><li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首頁</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>標籤</a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分類</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>歸檔</a></li><li class="menu-item menu-item-search"><a href="/search/" rel="section"><i class="fa fa-search fa-fw"></i>搜尋</a></li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜尋
+        </a>
+      </li>
   </ul>
 </nav>
 
 
 
+  <div class="search-pop-overlay">
+    <div class="popup search-popup"><div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off" maxlength="80"
+           placeholder="搜尋..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close" role="button">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div class="search-result-container no-result">
+  <div class="search-result-icon">
+    <i class="fa fa-spinner fa-pulse fa-5x"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
 
 </div>
+        
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目錄
+        </li>
+        <li class="sidebar-nav-overview">
+          本站概要
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%A8%AD%E5%AE%9A-Host-%E7%92%B0%E5%A2%83-v2"><span class="nav-number">1.</span> <span class="nav-text">設定 Host 環境</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%B7%A8%E8%BC%AF-sshd-config-v2"><span class="nav-number">1.1.</span> <span class="nav-text">編輯 sshd_config</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%A8%AD%E5%AE%9A%E9%98%B2%E7%81%AB%E7%89%86-v2"><span class="nav-number">1.2.</span> <span class="nav-text">設定防火牆</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BD%BF%E7%94%A8-Docker-Compose-%E5%BB%BA%E7%BD%AE-GitLab"><span class="nav-number">2.</span> <span class="nav-text">使用 Docker Compose 建置 GitLab</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AE%89%E8%A3%9D-Docker-%E5%8F%8A-Docker-Compose"><span class="nav-number">2.1.</span> <span class="nav-text">安裝 Docker 及 Docker Compose</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%95%9F%E5%8B%95-Docker-Engine"><span class="nav-number">2.2.</span> <span class="nav-text">啟動 Docker Engine</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%87%AA%E7%B0%BD%E6%86%91%E8%AD%89%E8%99%95%E7%90%86-v2"><span class="nav-number">3.</span> <span class="nav-text">自簽憑證處理</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%A8%AD%E5%AE%9A-GitLab-v2"><span class="nav-number">4.</span> <span class="nav-text">設定 GitLab</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%89%B5%E5%BB%BA%E7%AE%A1%E7%90%86%E5%93%A1%E5%B8%B3%E8%99%9F-v2"><span class="nav-number">4.1.</span> <span class="nav-text">創建管理員帳號</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%89%B5%E5%BB%BA-Project-v2"><span class="nav-number">4.2.</span> <span class="nav-text">創建 Project</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%B0%87-GitLab-%E5%8A%A0%E5%85%A5%E9%96%8B%E7%99%BC%E7%92%B0%E5%A2%83-v2"><span class="nav-number">5.</span> <span class="nav-text">將 GitLab 加入開發環境</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%A8%AD%E5%AE%9A-SSH-Key-v2"><span class="nav-number">5.1.</span> <span class="nav-text">設定 SSH Key</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%A8%AD%E5%AE%9A-git-remote-%E5%8F%8A%E5%89%B5%E5%BB%BA-GitLab-project-v2"><span class="nav-number">5.2.</span> <span class="nav-text">設定 git remote 及創建 GitLab project</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%BB%BA%E7%BD%AE-GitLab-Runner-v2"><span class="nav-number">6.</span> <span class="nav-text">建置 GitLab Runner</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%B7%A8%E8%BC%AF-docker-compose-%E8%A8%AD%E5%AE%9A%E6%AA%94-v2"><span class="nav-number">6.1.</span> <span class="nav-text">編輯 docker-compose 設定檔</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%A8%BB%E5%86%8A-GitLab-Runner-v2"><span class="nav-number">6.2.</span> <span class="nav-text">註冊 GitLab Runner</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%92%B0%E5%AF%AB-GitLab-CI-%E8%85%B3%E6%9C%AC-v2"><span class="nav-number">6.3.</span> <span class="nav-text">撰寫 GitLab CI 腳本</span></a></li></ol></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author site-overview-item animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="Shigurefox"
+      src="/images/shigurefox.jpg">
+  <p class="site-author-name" itemprop="name">Shigurefox</p>
+  <div class="site-description" itemprop="description">Data Engineer / Open Source Enthusiast.</div>
+</div>
+<div class="site-state-wrap site-overview-item animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">5</span>
+          <span class="site-state-item-name">文章</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+          <a href="/categories/">
+        <span class="site-state-item-count">3</span>
+        <span class="site-state-item-name">分類</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/tags/">
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">標籤</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author site-overview-item animated">
+      <span class="links-of-author-item">
+        <a href="https://github.com/shigurefox" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;shigurefox" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:shigurefox@gmail.com" title="E-Mail → mailto:shigurefox@gmail.com" rel="noopener" target="_blank"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+  </div>
+
+
+
+        </div>
+      </div>
+    </div>
+  </aside>
+  <div class="sidebar-dimmer"></div>
+
+
     </header>
 
     
-  <div class="back-to-top">
+  <div class="back-to-top" role="button" aria-label="回到頂端">
     <i class="fa fa-arrow-up"></i>
     <span>0%</span>
   </div>
 
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
 
-    <main class="main">
-      <div class="main-inner">
-        <div class="content-wrap">
-          
 
-          <div class="content post posts-expand">
-            
+    <div class="main-inner post posts-expand">
 
-    
+
+  
+
+
+<div class="post-block">
   
   
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-TW">
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-TW">
     <link itemprop="mainEntityOfPage" href="https://shigurefox.github.io/2022/07/18/gitlab-docker-runner-ci-tutorial/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/shigurefox.jpg">
       <meta itemprop="name" content="Shigurefox">
-      <meta itemprop="description" content="Data Engineer / Open Source Enthusiast.">
     </span>
 
     <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
       <meta itemprop="name" content="Shigurefox's Den">
+      <meta itemprop="description" content="Data Engineer / Open Source Enthusiast.">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="CentOS 7 GitLab + GitLab Runner + GitLab CI 建置教學 | Shigurefox's Den">
+      <meta itemprop="description" content="">
     </span>
       <header class="post-header">
         <h1 class="post-title" itemprop="name headline">
           CentOS 7 GitLab + GitLab Runner + GitLab CI 建置教學
         </h1>
 
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">發表於</span>
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">發表於</span>
 
-              <time title="創建時間：2022-07-18 18:26:50" itemprop="dateCreated datePublished" datetime="2022-07-18T18:26:50+08:00">2022-07-18</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">更新於</span>
-                <time title="修改時間：2022-07-21 18:13:54" itemprop="dateModified" datetime="2022-07-21T18:13:54+08:00">2022-07-21</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分類於</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/DevOps-%E7%AD%86%E8%A8%98/" itemprop="url" rel="index"><span itemprop="name">DevOps 筆記</span></a>
-                </span>
-            </span>
+      <time title="創建時間：2022-07-18 18:26:50" itemprop="dateCreated datePublished" datetime="2022-07-18T18:26:50+08:00">2022-07-18</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">更新於</span>
+      <time title="修改時間：2022-07-21 18:13:54" itemprop="dateModified" datetime="2022-07-21T18:13:54+08:00">2022-07-21</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分類於</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/DevOps-%E7%AD%86%E8%A8%98/" itemprop="url" rel="index"><span itemprop="name">DevOps 筆記</span></a>
+        </span>
+    </span>
 
-          <br>
-            <span class="post-meta-item" title="文章字數">
-              <span class="post-meta-item-icon">
-                <i class="far fa-file-word"></i>
-              </span>
-                <span class="post-meta-item-text">文章字數：</span>
-              <span>6.3k</span>
-            </span>
-            <span class="post-meta-item" title="所需閱讀時間">
-              <span class="post-meta-item-icon">
-                <i class="far fa-clock"></i>
-              </span>
-                <span class="post-meta-item-text">所需閱讀時間 &asymp;</span>
-              <span>6 分鐘</span>
-            </span>
+  
+    <span class="post-meta-break"></span>
+    <span class="post-meta-item" title="文章字數">
+      <span class="post-meta-item-icon">
+        <i class="far fa-file-word"></i>
+      </span>
+      <span class="post-meta-item-text">文章字數：</span>
+      <span>6.3k</span>
+    </span>
+    <span class="post-meta-item" title="所需閱讀時間">
+      <span class="post-meta-item-icon">
+        <i class="far fa-clock"></i>
+      </span>
+      <span class="post-meta-item-text">所需閱讀時間 &asymp;</span>
+      <span>6 分鐘</span>
+    </span>
+</div>
 
         </div>
       </header>
@@ -248,8 +300,6 @@
     
     
     <div class="post-body" itemprop="articleBody">
-
-      
         <p>本文示範如何在 CentOS 7 於內部網路自行架設 GitLab 及 GitLab Runner 服務，並將 GitLab 加入 git remote，最後撰寫 <code>.gitlab-ci.yml</code>，透過 GitLab Runner 在 git push 時自動執行 CI 腳本。</p>
 <span id="more"></span>
 <hr>
@@ -365,7 +415,7 @@
     
     
 
-      <footer class="post-footer">
+    <footer class="post-footer">
           <div class="post-tags">
               <a href="/tags/linux/" rel="tag"># linux</a>
               <a href="/tags/centos/" rel="tag"># centos</a>
@@ -375,198 +425,79 @@
 
         
 
-
-        
-    <div class="post-nav">
-      <div class="post-nav-item">
-    <a href="/2022/07/08/hello-world/" rel="prev" title="Hello World">
-      <i class="fa fa-chevron-left"></i> Hello World
-    </a></div>
-      <div class="post-nav-item">
-    <a href="/2022/07/21/Rocky-Linux-GitLab-GitLab-Runner-GitLab-CI-%E5%BB%BA%E7%BD%AE%E6%95%99%E5%AD%B8/" rel="next" title="Rocky Linux GitLab + GitLab Runner + GitLab CI 建置教學">
-      Rocky Linux GitLab + GitLab Runner + GitLab CI 建置教學 <i class="fa fa-chevron-right"></i>
-    </a></div>
-    </div>
-      </footer>
-    
-  </article>
-  
-  
-  
-
-
-
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2022/07/08/hello-world/" rel="prev" title="Hello World">
+                  <i class="fa fa-chevron-left"></i> Hello World
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2022/07/21/Rocky-Linux-GitLab-GitLab-Runner-GitLab-CI-%E5%BB%BA%E7%BD%AE%E6%95%99%E5%AD%B8/" rel="next" title="Rocky Linux GitLab + GitLab Runner + GitLab CI 建置教學">
+                  Rocky Linux GitLab + GitLab Runner + GitLab CI 建置教學 <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
           </div>
-          
-    <div class="comments" id="comments"> 
-      <script src="https://utteranc.es/client.js"
-              repo="shigurefox/shigurefox.github.io"
-              issue-term="title"
-              theme="github-light"
-              crossorigin="anonymous"
-              async>
-      </script>
-    </div>
-
-<script>
-  window.addEventListener('tabs:register', () => {
-    let { activeClass } = CONFIG.comments;
-    if (CONFIG.comments.storage) {
-      activeClass = localStorage.getItem('comments_active') || activeClass;
-    }
-    if (activeClass) {
-      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
-      if (activeTab) {
-        activeTab.click();
-      }
-    }
-  });
-  if (CONFIG.comments.storage) {
-    window.addEventListener('tabs:click', event => {
-      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
-      let commentClass = event.target.classList[1];
-      localStorage.setItem('comments_active', commentClass);
-    });
-  }
-</script>
-
-        </div>
-          
-  
-  <div class="toggle sidebar-toggle">
-    <span class="toggle-line toggle-line-first"></span>
-    <span class="toggle-line toggle-line-middle"></span>
-    <span class="toggle-line toggle-line-last"></span>
-  </div>
-
-  <aside class="sidebar">
-    <div class="sidebar-inner">
-
-      <ul class="sidebar-nav motion-element">
-        <li class="sidebar-nav-toc">
-          文章目錄
-        </li>
-        <li class="sidebar-nav-overview">
-          本站概要
-        </li>
-      </ul>
-
-      <!--noindex-->
-      <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%A8%AD%E5%AE%9A-Host-%E7%92%B0%E5%A2%83-v2"><span class="nav-number">1.</span> <span class="nav-text">設定 Host 環境</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%B7%A8%E8%BC%AF-sshd-config-v2"><span class="nav-number">1.1.</span> <span class="nav-text">編輯 sshd_config</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%A8%AD%E5%AE%9A%E9%98%B2%E7%81%AB%E7%89%86-v2"><span class="nav-number">1.2.</span> <span class="nav-text">設定防火牆</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BD%BF%E7%94%A8-Docker-Compose-%E5%BB%BA%E7%BD%AE-GitLab"><span class="nav-number">2.</span> <span class="nav-text">使用 Docker Compose 建置 GitLab</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AE%89%E8%A3%9D-Docker-%E5%8F%8A-Docker-Compose"><span class="nav-number">2.1.</span> <span class="nav-text">安裝 Docker 及 Docker Compose</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%95%9F%E5%8B%95-Docker-Engine"><span class="nav-number">2.2.</span> <span class="nav-text">啟動 Docker Engine</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%87%AA%E7%B0%BD%E6%86%91%E8%AD%89%E8%99%95%E7%90%86-v2"><span class="nav-number">3.</span> <span class="nav-text">自簽憑證處理</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%A8%AD%E5%AE%9A-GitLab-v2"><span class="nav-number">4.</span> <span class="nav-text">設定 GitLab</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%89%B5%E5%BB%BA%E7%AE%A1%E7%90%86%E5%93%A1%E5%B8%B3%E8%99%9F-v2"><span class="nav-number">4.1.</span> <span class="nav-text">創建管理員帳號</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%89%B5%E5%BB%BA-Project-v2"><span class="nav-number">4.2.</span> <span class="nav-text">創建 Project</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%B0%87-GitLab-%E5%8A%A0%E5%85%A5%E9%96%8B%E7%99%BC%E7%92%B0%E5%A2%83-v2"><span class="nav-number">5.</span> <span class="nav-text">將 GitLab 加入開發環境</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%A8%AD%E5%AE%9A-SSH-Key-v2"><span class="nav-number">5.1.</span> <span class="nav-text">設定 SSH Key</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%A8%AD%E5%AE%9A-git-remote-%E5%8F%8A%E5%89%B5%E5%BB%BA-GitLab-project-v2"><span class="nav-number">5.2.</span> <span class="nav-text">設定 git remote 及創建 GitLab project</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%BB%BA%E7%BD%AE-GitLab-Runner-v2"><span class="nav-number">6.</span> <span class="nav-text">建置 GitLab Runner</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%B7%A8%E8%BC%AF-docker-compose-%E8%A8%AD%E5%AE%9A%E6%AA%94-v2"><span class="nav-number">6.1.</span> <span class="nav-text">編輯 docker-compose 設定檔</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%A8%BB%E5%86%8A-GitLab-Runner-v2"><span class="nav-number">6.2.</span> <span class="nav-text">註冊 GitLab Runner</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%92%B0%E5%AF%AB-GitLab-CI-%E8%85%B3%E6%9C%AC-v2"><span class="nav-number">6.3.</span> <span class="nav-text">撰寫 GitLab CI 腳本</span></a></li></ol></li></ol></div>
-      </div>
-      <!--/noindex-->
-
-      <div class="site-overview-wrap sidebar-panel">
-        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
-    <img class="site-author-image" itemprop="image" alt="Shigurefox"
-      src="/images/shigurefox.jpg">
-  <p class="site-author-name" itemprop="name">Shigurefox</p>
-  <div class="site-description" itemprop="description">Data Engineer / Open Source Enthusiast.</div>
+    </footer>
+  </article>
 </div>
-<div class="site-state-wrap motion-element">
-  <nav class="site-state">
-      <div class="site-state-item site-state-posts">
-          <a href="/archives/">
-        
-          <span class="site-state-item-count">5</span>
-          <span class="site-state-item-name">文章</span>
-        </a>
-      </div>
-      <div class="site-state-item site-state-categories">
-            <a href="/categories/">
-          
-        <span class="site-state-item-count">3</span>
-        <span class="site-state-item-name">分類</span></a>
-      </div>
-      <div class="site-state-item site-state-tags">
-            <a href="/tags/">
-          
-        <span class="site-state-item-count">7</span>
-        <span class="site-state-item-name">標籤</span></a>
-      </div>
-  </nav>
+
+
+
+
+
+
+    <div class="comments utterances-container"></div>
 </div>
-  <div class="links-of-author motion-element">
-      <span class="links-of-author-item">
-        <a href="https://github.com/shigurefox" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;shigurefox" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
-      </span>
-      <span class="links-of-author-item">
-        <a href="mailto:shigurefox@gmail.com" title="E-Mail → mailto:shigurefox@gmail.com" rel="noopener" target="_blank"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
-      </span>
-  </div>
+  </main>
 
+  <footer class="footer">
+    <div class="footer-inner">
 
-
-      </div>
-
-    </div>
-  </aside>
-  <div id="sidebar-dimmer"></div>
-
-
-      </div>
-    </main>
-
-    <footer class="footer">
-      <div class="footer-inner">
-        
-
-        
 
 <div class="copyright">
-  
   &copy; 
   <span itemprop="copyrightYear">2022</span>
   <span class="with-love">
     <i class="fa fa-heart"></i>
   </span>
   <span class="author" itemprop="copyrightHolder">Shigurefox</span>
-    <span class="post-meta-divider">|</span>
+</div>
+<div class="wordcount">
+  <span class="post-meta-item">
     <span class="post-meta-item-icon">
-      <i class="fa fa-chart-area"></i>
+      <i class="fa fa-chart-line"></i>
     </span>
     <span title="總字數">17k</span>
-    <span class="post-meta-divider">|</span>
+  </span>
+  <span class="post-meta-item">
     <span class="post-meta-item-icon">
       <i class="fa fa-coffee"></i>
     </span>
     <span title="所需總閱讀時間">15 分鐘</span>
+  </span>
 </div>
-  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> 強力驅動
+  <div class="powered-by">由 <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/" rel="noopener" target="_blank">NexT.Gemini</a> 強力驅動
+  </div>
+  <div class="addthis_inline_share_toolbox">
+    <script src="//s7.addthis.com/js/300/addthis_widget.js#pubid=ra-62f37c6cb9086e79" async="async"></script>
   </div>
 
-        
-
-
-
-
-
-
-
-
-      </div>
-    </footer>
-  </div>
+    </div>
+  </footer>
 
   
-  <script src="/lib/anime.min.js"></script>
-  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
-  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
-  <script src="/lib/velocity/velocity.min.js"></script>
-  <script src="/lib/velocity/velocity.ui.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/fancybox/3.5.7/jquery.fancybox.min.js" integrity="sha256-yt2kYMy0w8AbtF89WXb2P1rfjcP/HTHLT7097U8Y5b8=" crossorigin="anonymous"></script>
+<script src="/js/comments.js"></script><script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/next-boot.js"></script>
 
-<script src="/js/utils.js"></script>
-
-<script src="/js/motion.js"></script>
-
-
-<script src="/js/schemes/pisces.js"></script>
+  
+<script src="https://cdnjs.cloudflare.com/ajax/libs/hexo-generator-searchdb/1.4.0/search.js" integrity="sha256-vXZMYLEqsROAXkEw93GGIvaB2ab+QW6w3+1ahD9nXXA=" crossorigin="anonymous"></script>
+<script src="/js/third-party/search/local-search.js"></script>
 
 
-<script src="/js/next-boot.js"></script>
 
-
+  <script src="/js/third-party/fancybox.js"></script>
 
 
   
@@ -574,20 +505,8 @@
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-  
-
-  
+<script class="next-config" data-name="utterances" type="application/json">{"enable":true,"repo":"shigurefox/shigurefox.github.io","issue_term":"title","theme":"github-light"}</script>
+<script src="/js/third-party/comments/utterances.js"></script>
 
 </body>
 </html>
