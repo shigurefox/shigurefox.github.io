@@ -79,6 +79,30 @@
       </tags>
   </entry>
   <entry>
+    <title>Docker permission denied 錯誤解決方法</title>
+    <url>/2022/08/11/docker-permission-denied-sudo/</url>
+    <content><![CDATA[<p>Docker 預設需要透過 sudo 取得 superuser 權限才能夠執行，否則會得到如下錯誤：</p>
+<blockquote>
+<p>Got permission denied while trying to connect to the Docker daemon socket …</p>
+</blockquote>
+<span id="more"></span>
+<p>解決方法如下：</p>
+<p>確認已有名為 docker 的 user group</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">sudo groupadd docker</span><br></pre></td></tr></table></figure>
+<p>將目標使用者加入 docker user group</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">sudo usermod -aG docker <span class="variable">$&#123;USER&#125;</span></span><br></pre></td></tr></table></figure>
+<p>重新登入或執行以下指令更新 session 以套用新群組設定</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">su -s <span class="variable">$&#123;USER&#125;</span></span><br></pre></td></tr></table></figure>
+<p>接下來便可以嘗試不透過 sudo 直接執行 docker 指令了</p>
+]]></content>
+      <categories>
+        <category>DevOps 筆記</category>
+      </categories>
+      <tags>
+        <tag>docker</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>CentOS 7 GitLab + GitLab Runner + GitLab CI 建置教學</title>
     <url>/2022/07/18/gitlab-docker-runner-ci/</url>
     <content><![CDATA[<p>本文示範如何在 CentOS 7 於內部網路自行架設 GitLab 及 GitLab Runner 服務，並將 GitLab 加入 git remote，最後撰寫 <code>.gitlab-ci.yml</code>，透過 GitLab Runner 在 git push 時自動執行 CI 腳本。</p>
@@ -134,7 +158,7 @@
 <h3 id="創建管理員帳號"><a class="header-anchor" href="#創建管理員帳號"></a>創建管理員帳號</h3>
 <p>預設管理員帳號為 <code>root</code>，密碼則存在 <code>gitlab_data/config/initial_root_password</code> 檔案內，建議登入後點選左上角 <code>Menu</code><br>
 → <code>Admin</code> → <code>new user</code> 創建自己的管理員帳號<sup class="footnote-ref"><a href="#fn1" id="fnref1">[1]</a></sup><sup class="footnote-ref"><a href="#fn2" id="fnref2">[2]</a></sup>，並透過確認信所附的連結設定密碼及啟用。</p>
-<p><img src="gitlab-docker-runner-ci-tutorial/image01.png" alt="創建使用者畫面"></p>
+<p><img src="/2022/07/18/gitlab-docker-runner-ci/image01.png" alt="創建使用者畫面"></p>
 <h3 id="創建-Project"><a class="header-anchor" href="#創建-Project"></a>創建 Project</h3>
 <p>有以下幾種做法：</p>
 <ul>
@@ -156,7 +180,7 @@
 <li>其中 -C 標示該 key 的使用者資訊，通常會是 <code>&lt;username&gt;@&lt;hostname&gt;.&lt;domain&gt;</code> ，或是使用者的 email address</li>
 </ul>
 <p>點選畫面右上角個人圖示 → <code>Preferences</code>，再點擊畫面左方列表 <code>SSH Keys</code>，將剛才複製的 SSH Key 貼到Key欄位，可一併設定有效期限，最後點擊 <code>Add key</code>。</p>
-<p><img src="gitlab-docker-runner-ci-tutorial/image02.png" alt="SSH Key 設定畫面"></p>
+<p><img src="/2022/07/18/gitlab-docker-runner-ci/image02.png" alt="SSH Key 設定畫面"></p>
 <h3 id="設定-git-remote-及創建-GitLab-project"><a class="header-anchor" href="#設定-git-remote-及創建-GitLab-project"></a>設定 git remote 及創建 GitLab project</h3>
 <p>以既有本地檔案初始化 git 並創建 GitLab project</p>
 <figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="built_in">cd</span> &lt;project_folder&gt;</span><br><span class="line">git init --initial-branch=main</span><br><span class="line">git remote add origin git@&lt;GitLab URL&gt;:&lt;username&gt;/&lt;your repo name&gt;.git</span><br><span class="line">git add .</span><br><span class="line">git commit -m <span class="string">&quot;Initial commit&quot;</span></span><br><span class="line">git push -u origin main</span><br></pre></td></tr></table></figure>
@@ -250,31 +274,6 @@
       </tags>
   </entry>
   <entry>
-    <title>Ubuntu 20.04 設定固定 IP</title>
-    <url>/2022/08/11/ubuntu-20-04-static-ip/</url>
-    <content><![CDATA[<p>本文記錄建立 Ubuntu VM 後手動設定固定 IP 的方式。</p>
-<span id="more"></span>
-<h2 id="關閉-cloud-init"><a class="header-anchor" href="#關閉-cloud-init"></a>關閉 cloud-init</h2>
-<p>如果 Ubuntu 環境是使用 cloud-init 建立的雲端 VM，需先關閉 cloud-init。<br>
-在 <code>/etc/cloud</code> 或 <code>/var/lib/cloud</code> 下建立 <code>cloud-init.disabled</code> 檔案。</p>
-<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">sudo <span class="built_in">touch</span> /etc/cloud/cloud-init.disabled</span><br></pre></td></tr></table></figure>
-<h2 id="修改-ip-config"><a class="header-anchor" href="#修改-ip-config"></a>修改 ip config</h2>
-<p>執行 <code>ip a</code> 查看目前使用的網路介面名稱，通常是 <code>ensXXX</code>。</p>
-<p>搜尋 <code>/etc/netplan</code> 下的設定檔，用 <code>ls -l</code> 查看第一個檔案名稱，若為01－開頭，則可自行建立00-network-config.yaml。</p>
-<figure class="highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="attr">network:</span></span><br><span class="line">  <span class="attr">version:</span> <span class="number">2</span></span><br><span class="line">  <span class="attr">renderer:</span> <span class="string">networkd</span></span><br><span class="line">  <span class="attr">ethernets:</span></span><br><span class="line">    <span class="attr">ensXXX:</span></span><br><span class="line">      <span class="attr">dhcp4:</span> <span class="literal">no</span> <span class="comment"># 不需要 DHCP 配給 IPv4 位址可加入這行</span></span><br><span class="line">      <span class="attr">addresses:</span> [<span class="string">&lt;你的固定</span> <span class="string">IP</span> <span class="string">位址&gt;/&lt;遮罩位數&gt;</span>]</span><br><span class="line">      <span class="attr">gateway4:</span> <span class="string">&lt;Gateway</span> <span class="string">IP</span> <span class="string">位址&gt;</span></span><br><span class="line">      <span class="attr">nameservers:</span> [<span class="string">&lt;DNS</span> <span class="string">IP</span> <span class="string">位址&gt;</span>]</span><br><span class="line"></span><br></pre></td></tr></table></figure>
-<p>接著輸入以下指令套用變更。</p>
-<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">sudo netplan try</span><br></pre></td></tr></table></figure>
-<p>這時便可以再執行 <code>ip a</code> 確認結果。</p>
-]]></content>
-      <categories>
-        <category>Linux 筆記</category>
-      </categories>
-      <tags>
-        <tag>linux</tag>
-        <tag>ubuntu</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>Rocky Linux GitLab + GitLab Runner + GitLab CI 建置教學</title>
     <url>/2022/07/21/rocky-linux-gitlab-ci/</url>
     <content><![CDATA[<p>本文示範如何在 Rocky Linux 於內部網路自行架設 GitLab 及 GitLab Runner 服務，並將 GitLab 加入 git remote，最後撰寫 <code>.gitlab-ci.yml</code>，透過 GitLab Runner 在 git push 時自動執行 CI 腳本。</p>
@@ -330,7 +329,7 @@
 <h3 id="創建管理員帳號-v2"><a class="header-anchor" href="#創建管理員帳號-v2"></a>創建管理員帳號</h3>
 <p>預設管理員帳號為 <code>root</code>，密碼則存在 <code>gitlab/config/initial_root_password</code> 檔案內，建議登入後點選左上角 <code>Menu</code><br>
 → <code>Admin</code> → <code>new user</code> 創建自己的管理員帳號<sup class="footnote-ref"><a href="#fn1" id="fnref1">[1]</a></sup><sup class="footnote-ref"><a href="#fn2" id="fnref2">[2]</a></sup>，並透過確認信所附的連結設定密碼及啟用。</p>
-<p><img src="Rocky-Linux-GitLab-GitLab-Runner-GitLab-CI-%E5%BB%BA%E7%BD%AE%E6%95%99%E5%AD%B8/image01.png" alt="創建使用者畫面"></p>
+<p><img src="/2022/07/21/rocky-linux-gitlab-ci/image01.png" alt="創建使用者畫面"></p>
 <h3 id="創建-Project-v2"><a class="header-anchor" href="#創建-Project-v2"></a>創建 Project</h3>
 <p>有以下幾種做法：</p>
 <ul>
@@ -352,7 +351,7 @@
 <li>其中 -C 標示該 key 的使用者資訊，通常會是 <code>&lt;username&gt;@&lt;hostname&gt;.&lt;domain&gt;</code> ，或是使用者的 email address</li>
 </ul>
 <p>點選畫面右上角個人圖示 → <code>Preferences</code>，再點擊畫面左方列表 <code>SSH Keys</code>，將剛才複製的 SSH Key 貼到Key欄位，可一併設定有效期限，最後點擊 <code>Add key</code>。</p>
-<p><img src="Rocky-Linux-GitLab-GitLab-Runner-GitLab-CI-%E5%BB%BA%E7%BD%AE%E6%95%99%E5%AD%B8/image02.png" alt="SSH Key 設定畫面"></p>
+<p><img src="/2022/07/21/rocky-linux-gitlab-ci/image02.png" alt="SSH Key 設定畫面"></p>
 <h3 id="設定-git-remote-及創建-GitLab-project-v2"><a class="header-anchor" href="#設定-git-remote-及創建-GitLab-project-v2"></a>設定 git remote 及創建 GitLab project</h3>
 <p>以既有本地檔案初始化 git 並創建 GitLab project</p>
 <figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="built_in">cd</span> &lt;project_folder&gt;</span><br><span class="line">git init --initial-branch=main</span><br><span class="line">git remote add origin git@&lt;GitLab URL&gt;:&lt;username&gt;/&lt;your repo name&gt;.git</span><br><span class="line">git add .</span><br><span class="line">git commit -m <span class="string">&quot;Initial commit&quot;</span></span><br><span class="line">git push -u origin main</span><br></pre></td></tr></table></figure>
@@ -393,6 +392,31 @@
         <tag>linux</tag>
         <tag>rocky-linux</tag>
         <tag>gitlab</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Ubuntu 20.04 設定固定 IP</title>
+    <url>/2022/08/11/ubuntu-20-04-static-ip/</url>
+    <content><![CDATA[<p>本文記錄建立 Ubuntu VM 後手動設定固定 IP 的方式。</p>
+<span id="more"></span>
+<h2 id="關閉-cloud-init"><a class="header-anchor" href="#關閉-cloud-init"></a>關閉 cloud-init</h2>
+<p>如果 Ubuntu 環境是使用 cloud-init 建立的雲端 VM，需先關閉 cloud-init。<br>
+在 <code>/etc/cloud</code> 或 <code>/var/lib/cloud</code> 下建立 <code>cloud-init.disabled</code> 檔案。</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">sudo <span class="built_in">touch</span> /etc/cloud/cloud-init.disabled</span><br></pre></td></tr></table></figure>
+<h2 id="修改-ip-config"><a class="header-anchor" href="#修改-ip-config"></a>修改 ip config</h2>
+<p>執行 <code>ip a</code> 查看目前使用的網路介面名稱，通常是 <code>ensXXX</code>。</p>
+<p>搜尋 <code>/etc/netplan</code> 下的設定檔，用 <code>ls -l</code> 查看第一個檔案名稱，若為01－開頭，則可自行建立00-network-config.yaml。</p>
+<figure class="highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="attr">network:</span></span><br><span class="line">  <span class="attr">version:</span> <span class="number">2</span></span><br><span class="line">  <span class="attr">renderer:</span> <span class="string">networkd</span></span><br><span class="line">  <span class="attr">ethernets:</span></span><br><span class="line">    <span class="attr">ensXXX:</span></span><br><span class="line">      <span class="attr">dhcp4:</span> <span class="literal">no</span> <span class="comment"># 不需要 DHCP 配給 IPv4 位址可加入這行</span></span><br><span class="line">      <span class="attr">addresses:</span> [<span class="string">&lt;你的固定</span> <span class="string">IP</span> <span class="string">位址&gt;/&lt;遮罩位數&gt;</span>]</span><br><span class="line">      <span class="attr">gateway4:</span> <span class="string">&lt;Gateway</span> <span class="string">IP</span> <span class="string">位址&gt;</span></span><br><span class="line">      <span class="attr">nameservers:</span> [<span class="string">&lt;DNS</span> <span class="string">IP</span> <span class="string">位址&gt;</span>]</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>接著輸入以下指令套用變更。</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">sudo netplan try</span><br></pre></td></tr></table></figure>
+<p>這時便可以再執行 <code>ip a</code> 確認結果。</p>
+]]></content>
+      <categories>
+        <category>Linux 筆記</category>
+      </categories>
+      <tags>
+        <tag>linux</tag>
+        <tag>ubuntu</tag>
       </tags>
   </entry>
 </search>
