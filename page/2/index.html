@@ -24,7 +24,7 @@
     <meta name="description" content="Data Engineer &#x2F; Open Source Enthusiast.">
 <meta property="og:type" content="website">
 <meta property="og:title" content="Shigurefox&#39;s Den">
-<meta property="og:url" content="https://shigurefox.github.io/archives/2022/">
+<meta property="og:url" content="https://shigurefox.github.io/page/2/">
 <meta property="og:site_name" content="Shigurefox&#39;s Den">
 <meta property="og:description" content="Data Engineer &#x2F; Open Source Enthusiast.">
 <meta property="og:locale" content="zh_TW">
@@ -32,14 +32,14 @@
 <meta name="twitter:card" content="summary">
 
 
-<link rel="canonical" href="https://shigurefox.github.io/archives/2022/">
+<link rel="canonical" href="https://shigurefox.github.io/page/2/">
 
 
 
-<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":false,"lang":"zh-tw","comments":"","permalink":"","path":"archives/2022/index.html","title":""}</script>
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":true,"isPost":false,"lang":"zh-tw","comments":"","permalink":"","path":"page/2/index.html","title":""}</script>
 
 <script class="next-config" data-name="calendar" type="application/json">""</script>
-<title>Archive | Shigurefox's Den</title>
+<title>Shigurefox's Den</title>
   
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-4DZZM5536W"></script>
   <script class="next-config" data-name="google_analytics" type="application/json">{"tracking_id":"G-4DZZM5536W","only_pageview":false}</script>
@@ -205,231 +205,216 @@
 </noscript>
 
 
-    <div class="main-inner archive posts-collapse">
+    <div class="main-inner index posts-expand">
+
+    
 
 
+<div class="post-block">
   
   
-  
-  <div class="post-block">
-    <div class="post-content">
-      <div class="collection-title">
-        <span class="collection-header">Um..! 12 posts in total. Keep on posting.</span>
-      </div>
 
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
+    <link itemprop="mainEntityOfPage" href="https://shigurefox.github.io/2022/07/18/zh-tw/gitlab-docker-runner-ci-tutorial/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/shigurefox.jpg">
+      <meta itemprop="name" content="Shigurefox">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Shigurefox's Den">
+      <meta itemprop="description" content="Data Engineer / Open Source Enthusiast.">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="undefined | Shigurefox's Den">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          <a href="/2022/07/18/zh-tw/gitlab-docker-runner-ci-tutorial/" class="post-title-link" itemprop="url">CentOS 7 GitLab + GitLab Runner + GitLab CI 建置教學</a>
+        </h2>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2022-07-18 18:26:50" itemprop="dateCreated datePublished" datetime="2022-07-18T18:26:50+08:00">2022-07-18</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">Edited on</span>
+      <time title="Modified: 2022-07-21 18:13:54" itemprop="dateModified" datetime="2022-07-21T18:13:54+08:00">2022-07-21</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">In</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/DevOps-%E7%AD%86%E8%A8%98/" itemprop="url" rel="index"><span itemprop="name">DevOps 筆記</span></a>
+        </span>
+    </span>
+
+  
+    <span class="post-meta-break"></span>
+    <span class="post-meta-item" title="Symbols count in article">
+      <span class="post-meta-item-icon">
+        <i class="far fa-file-word"></i>
+      </span>
+      <span class="post-meta-item-text">Symbols count in article: </span>
+      <span>6.3k</span>
+    </span>
+    <span class="post-meta-item" title="Reading time">
+      <span class="post-meta-item-icon">
+        <i class="far fa-clock"></i>
+      </span>
+      <span class="post-meta-item-text">Reading time &asymp;</span>
+      <span>6 mins.</span>
+    </span>
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+          <p>本文示範如何在 CentOS 7 於內部網路自行架設 GitLab 及 GitLab Runner 服務，並將 GitLab 加入 git remote，最後撰寫 <code>.gitlab-ci.yml</code>，透過 GitLab Runner 在 git push 時自動執行 CI 腳本。</p>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/2022/07/18/zh-tw/gitlab-docker-runner-ci-tutorial/#more" rel="contents">
+                Read more &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
       
-    <div class="collection-year">
-      <span class="collection-header">2022</span>
     </div>
 
-  <article itemscope itemtype="http://schema.org/Article">
-    <header class="post-header">
-      <div class="post-meta-container">
-        <time itemprop="dateCreated"
-              datetime="2022-08-11T13:56:15+08:00"
-              content="2022-08-11">
-          08-11
-        </time>
-      </div>
+    
+    
+    
 
-      <div class="post-title">
-          <a class="post-title-link" href="/2022/08/11/en/hello-world/" itemprop="url">
-            <span itemprop="name">Hello World</span>
-          </a>
-      </div>
-
+    <footer class="post-footer">
+        <div class="post-eof"></div>
       
-    </header>
+    </footer>
   </article>
+</div>
 
-  <article itemscope itemtype="http://schema.org/Article">
-    <header class="post-header">
-      <div class="post-meta-container">
-        <time itemprop="dateCreated"
-              datetime="2022-08-11T12:00:32+08:00"
-              content="2022-08-11">
-          08-11
-        </time>
-      </div>
 
-      <div class="post-title">
-          <a class="post-title-link" href="/2022/08/11/en/ubuntu-20-04-static-ip/" itemprop="url">
-            <span itemprop="name">Ubuntu 20.04 設定固定 IP</span>
-          </a>
-      </div>
 
+
+    
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
+    <link itemprop="mainEntityOfPage" href="https://shigurefox.github.io/2022/07/08/zh-tw/hello-world/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/shigurefox.jpg">
+      <meta itemprop="name" content="Shigurefox">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Shigurefox's Den">
+      <meta itemprop="description" content="Data Engineer / Open Source Enthusiast.">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="undefined | Shigurefox's Den">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          <a href="/2022/07/08/zh-tw/hello-world/" class="post-title-link" itemprop="url">Hello World</a>
+        </h2>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2022-07-08 10:35:14" itemprop="dateCreated datePublished" datetime="2022-07-08T10:35:14+08:00">2022-07-08</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">Edited on</span>
+      <time title="Modified: 2022-08-11 13:56:58" itemprop="dateModified" datetime="2022-08-11T13:56:58+08:00">2022-08-11</time>
+    </span>
+
+  
+    <span class="post-meta-break"></span>
+    <span class="post-meta-item" title="Symbols count in article">
+      <span class="post-meta-item-icon">
+        <i class="far fa-file-word"></i>
+      </span>
+      <span class="post-meta-item-text">Symbols count in article: </span>
+      <span>388</span>
+    </span>
+    <span class="post-meta-item" title="Reading time">
+      <span class="post-meta-item-icon">
+        <i class="far fa-clock"></i>
+      </span>
+      <span class="post-meta-item-text">Reading time &asymp;</span>
+      <span>1 mins.</span>
+    </span>
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+          <p>這是繁體中文版的 Hello World 頁面。</p>
+<p>Welcome to <a target="_blank" rel="noopener" href="https://hexo.io/">Hexo</a>! This is your very first post. Check <a target="_blank" rel="noopener" href="https://hexo.io/docs/">documentation</a> for more info. If you get any problems when using Hexo, you can find the answer in <a target="_blank" rel="noopener" href="https://hexo.io/docs/troubleshooting.html">troubleshooting</a> or you can ask me on <a target="_blank" rel="noopener" href="https://github.com/hexojs/hexo/issues">GitHub</a>.</p>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/2022/07/08/zh-tw/hello-world/#more" rel="contents">
+                Read more &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
       
-    </header>
-  </article>
-
-  <article itemscope itemtype="http://schema.org/Article">
-    <header class="post-header">
-      <div class="post-meta-container">
-        <time itemprop="dateCreated"
-              datetime="2022-08-11T12:00:32+08:00"
-              content="2022-08-11">
-          08-11
-        </time>
-      </div>
-
-      <div class="post-title">
-          <a class="post-title-link" href="/2022/08/11/zh-tw/ubuntu-20-04-static-ip/" itemprop="url">
-            <span itemprop="name">Ubuntu 20.04 設定固定 IP</span>
-          </a>
-      </div>
-
-      
-    </header>
-  </article>
-
-  <article itemscope itemtype="http://schema.org/Article">
-    <header class="post-header">
-      <div class="post-meta-container">
-        <time itemprop="dateCreated"
-              datetime="2022-08-09T18:18:10+08:00"
-              content="2022-08-09">
-          08-09
-        </time>
-      </div>
-
-      <div class="post-title">
-          <a class="post-title-link" href="/2022/08/09/en/linux-podman-compose-systemd/" itemprop="url">
-            <span itemprop="name">以 systemd 服務達成開機自動執行 podman-compose</span>
-          </a>
-      </div>
-
-      
-    </header>
-  </article>
-
-  <article itemscope itemtype="http://schema.org/Article">
-    <header class="post-header">
-      <div class="post-meta-container">
-        <time itemprop="dateCreated"
-              datetime="2022-08-09T18:18:10+08:00"
-              content="2022-08-09">
-          08-09
-        </time>
-      </div>
-
-      <div class="post-title">
-          <a class="post-title-link" href="/2022/08/09/zh-tw/linux-podman-compose-systemd/" itemprop="url">
-            <span itemprop="name">以 systemd 服務達成開機自動執行 podman-compose</span>
-          </a>
-      </div>
-
-      
-    </header>
-  </article>
-
-  <article itemscope itemtype="http://schema.org/Article">
-    <header class="post-header">
-      <div class="post-meta-container">
-        <time itemprop="dateCreated"
-              datetime="2022-08-01T09:20:52+08:00"
-              content="2022-08-01">
-          08-01
-        </time>
-      </div>
-
-      <div class="post-title">
-          <a class="post-title-link" href="/2022/08/01/en/Upgrade-from-CentOS-7-to-Rocky-Linux/" itemprop="url">
-            <span itemprop="name">從 CentOS 7 升級遷移到 Rocky Linux 8</span>
-          </a>
-      </div>
-
-      
-    </header>
-  </article>
-
-  <article itemscope itemtype="http://schema.org/Article">
-    <header class="post-header">
-      <div class="post-meta-container">
-        <time itemprop="dateCreated"
-              datetime="2022-08-01T09:20:52+08:00"
-              content="2022-08-01">
-          08-01
-        </time>
-      </div>
-
-      <div class="post-title">
-          <a class="post-title-link" href="/2022/08/01/zh-tw/Upgrade-from-CentOS-7-to-Rocky-Linux/" itemprop="url">
-            <span itemprop="name">從 CentOS 7 升級遷移到 Rocky Linux 8</span>
-          </a>
-      </div>
-
-      
-    </header>
-  </article>
-
-  <article itemscope itemtype="http://schema.org/Article">
-    <header class="post-header">
-      <div class="post-meta-container">
-        <time itemprop="dateCreated"
-              datetime="2022-07-21T15:37:53+08:00"
-              content="2022-07-21">
-          07-21
-        </time>
-      </div>
-
-      <div class="post-title">
-          <a class="post-title-link" href="/2022/07/21/en/Rocky-Linux-GitLab-GitLab-Runner-GitLab-CI/" itemprop="url">
-            <span itemprop="name">Rocky Linux GitLab + GitLab Runner + GitLab CI 建置教學</span>
-          </a>
-      </div>
-
-      
-    </header>
-  </article>
-
-  <article itemscope itemtype="http://schema.org/Article">
-    <header class="post-header">
-      <div class="post-meta-container">
-        <time itemprop="dateCreated"
-              datetime="2022-07-21T15:37:53+08:00"
-              content="2022-07-21">
-          07-21
-        </time>
-      </div>
-
-      <div class="post-title">
-          <a class="post-title-link" href="/2022/07/21/zh-tw/Rocky-Linux-GitLab-GitLab-Runner-GitLab-CI/" itemprop="url">
-            <span itemprop="name">Rocky Linux GitLab + GitLab Runner + GitLab CI 建置教學</span>
-          </a>
-      </div>
-
-      
-    </header>
-  </article>
-
-  <article itemscope itemtype="http://schema.org/Article">
-    <header class="post-header">
-      <div class="post-meta-container">
-        <time itemprop="dateCreated"
-              datetime="2022-07-18T18:26:50+08:00"
-              content="2022-07-18">
-          07-18
-        </time>
-      </div>
-
-      <div class="post-title">
-          <a class="post-title-link" href="/2022/07/18/en/gitlab-docker-runner-ci-tutorial/" itemprop="url">
-            <span itemprop="name">CentOS 7 GitLab + GitLab Runner + GitLab CI 建置教學</span>
-          </a>
-      </div>
-
-      
-    </header>
-  </article>
-
-
     </div>
-  </div>
-  
-  
-  
+
+    
+    
+    
+
+    <footer class="post-footer">
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+</div>
+
+
+
+
   <nav class="pagination">
-    <span class="page-number current">1</span><a class="page-number" href="/archives/2022/page/2/">2</a><a class="extend next" rel="next" href="/archives/2022/page/2/"><i class="fa fa-angle-right" aria-label="Next page"></i></a>
+    <a class="extend prev" rel="prev" href="/"><i class="fa fa-angle-left" aria-label="Previous page"></i></a><a class="page-number" href="/">1</a><span class="page-number current">2</span>
   </nav>
 
 </div>
@@ -445,11 +430,11 @@
     </label>
     <select class="lang-select" data-canonical="" aria-label="Select language">
       
-        <option value="zh-tw" data-href="/archives/2022/" selected="">
+        <option value="zh-tw" data-href="/page/2/" selected="">
           zh-tw
         </option>
       
-        <option value="en" data-href="/en/archives/2022/" selected="">
+        <option value="en" data-href="/en/page/2/" selected="">
           English
         </option>
       
