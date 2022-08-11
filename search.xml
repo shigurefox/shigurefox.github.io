@@ -231,9 +231,13 @@
 <figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">podman-compose systemd --action create-unit</span><br></pre></td></tr></table></figure>
 <p>會自動依 compose file 所在目錄建立 <code>podman-compose@&lt;PROJECT&gt;.service</code></p>
 <p>之後執行以下指令將服務檔註冊至 systemd 並啟用：</p>
-<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">podman-compose -a register</span><br><span class="line">systemctl --user <span class="built_in">enable</span> podman-compose@&lt;PROJECT&gt;.service</span><br></pre></td></tr></table></figure>
-<p>之後便可以如下列指令操作 podman-compose 服務</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">podman-compose -a register</span><br><span class="line">systemctl --user <span class="built_in">enable</span> --now podman-compose@&lt;PROJECT&gt;.service</span><br></pre></td></tr></table></figure>
+<p>之後便可以如下列指令操作</p>
 <figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">systemctl --user start podman-compose@&lt;PROJECT&gt;.service</span><br><span class="line">systemctl --user stop podman-compose@&lt;PROJECT&gt;.service</span><br><span class="line">systemctl --user status podman-compose@&lt;PROJECT&gt;.service</span><br></pre></td></tr></table></figure>
+<p>另外也可以從 podman 查看服務資訊：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">podman pod ps</span><br><span class="line">podman pod stats <span class="string">&#x27;pod_&lt;PROJECT&gt;&#x27;</span></span><br><span class="line">podman pod logs --<span class="built_in">tail</span>=10 -f <span class="string">&#x27;pod_&lt;PROJECT&gt;&#x27;</span></span><br></pre></td></tr></table></figure>
+<p>如果遇到一登出環境，podman-compose 服務就停止，則需要執行一次以下指令：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">sudo loginctl enable-linger <span class="string">&#x27;root&#x27;</span></span><br></pre></td></tr></table></figure>
 ]]></content>
       <categories>
         <category>Linux 筆記</category>
@@ -243,6 +247,31 @@
         <tag>podman</tag>
         <tag>podman-compose</tag>
         <tag>systemd</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Ubuntu 20.04 設定固定 IP</title>
+    <url>/2022/08/11/ubuntu-20-04-static-ip/</url>
+    <content><![CDATA[<p>本文記錄建立 Ubuntu VM 後手動設定固定 IP 的方式。</p>
+<span id="more"></span>
+<h2 id="關閉-cloud-init"><a class="header-anchor" href="#關閉-cloud-init"></a>關閉 cloud-init</h2>
+<p>如果 Ubuntu 環境是使用 cloud-init 建立的雲端 VM，需先關閉 cloud-init。<br>
+在 <code>/etc/cloud</code> 或 <code>/var/lib/cloud</code> 下建立 <code>cloud-init.disabled</code> 檔案。</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">sudo <span class="built_in">touch</span> /etc/cloud/cloud-init.disabled</span><br></pre></td></tr></table></figure>
+<h2 id="修改-ip-config"><a class="header-anchor" href="#修改-ip-config"></a>修改 ip config</h2>
+<p>執行 <code>ip a</code> 查看目前使用的網路介面名稱，通常是 <code>ensXXX</code>。</p>
+<p>搜尋 <code>/etc/netplan</code> 下的設定檔，用 <code>ls -l</code> 查看第一個檔案名稱，若為01－開頭，則可自行建立00-network-config.yaml。</p>
+<figure class="highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="attr">network:</span></span><br><span class="line">  <span class="attr">version:</span> <span class="number">2</span></span><br><span class="line">  <span class="attr">renderer:</span> <span class="string">networkd</span></span><br><span class="line">  <span class="attr">ethernets:</span></span><br><span class="line">    <span class="attr">ensXXX:</span></span><br><span class="line">      <span class="attr">dhcp4:</span> <span class="literal">no</span> <span class="comment"># 不需要 DHCP 配給 IPv4 位址可加入這行</span></span><br><span class="line">      <span class="attr">addresses:</span> [<span class="string">&lt;你的固定</span> <span class="string">IP</span> <span class="string">位址&gt;/&lt;遮罩位數&gt;</span>]</span><br><span class="line">      <span class="attr">gateway4:</span> <span class="string">&lt;Gateway</span> <span class="string">IP</span> <span class="string">位址&gt;</span></span><br><span class="line">      <span class="attr">nameservers:</span> [<span class="string">&lt;DNS</span> <span class="string">IP</span> <span class="string">位址&gt;</span>]</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>接著輸入以下指令套用變更。</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">sudo netplan try</span><br></pre></td></tr></table></figure>
+<p>這時便可以再執行 <code>ip a</code> 確認結果。</p>
+]]></content>
+      <categories>
+        <category>Linux 筆記</category>
+      </categories>
+      <tags>
+        <tag>linux</tag>
+        <tag>ubuntu</tag>
       </tags>
   </entry>
   <entry>
@@ -364,31 +393,6 @@
         <tag>linux</tag>
         <tag>rocky-linux</tag>
         <tag>gitlab</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>Ubuntu 20.04 設定固定 IP</title>
-    <url>/2022/08/11/ubuntu-20-04-static-ip/</url>
-    <content><![CDATA[<p>本文記錄建立 Ubuntu VM 後手動設定固定 IP 的方式。</p>
-<span id="more"></span>
-<h2 id="關閉-cloud-init"><a class="header-anchor" href="#關閉-cloud-init"></a>關閉 cloud-init</h2>
-<p>如果 Ubuntu 環境是使用 cloud-init 建立的雲端 VM，需先關閉 cloud-init。<br>
-在 <code>/etc/cloud</code> 或 <code>/var/lib/cloud</code> 下建立 <code>cloud-init.disabled</code> 檔案。</p>
-<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">sudo <span class="built_in">touch</span> /etc/cloud/cloud-init.disabled</span><br></pre></td></tr></table></figure>
-<h2 id="修改-ip-config"><a class="header-anchor" href="#修改-ip-config"></a>修改 ip config</h2>
-<p>執行 <code>ip a</code> 查看目前使用的網路介面名稱，通常是 <code>ensXXX</code>。</p>
-<p>搜尋 <code>/etc/netplan</code> 下的設定檔，用 <code>ls -l</code> 查看第一個檔案名稱，若為01－開頭，則可自行建立00-network-config.yaml。</p>
-<figure class="highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="attr">network:</span></span><br><span class="line">  <span class="attr">version:</span> <span class="number">2</span></span><br><span class="line">  <span class="attr">renderer:</span> <span class="string">networkd</span></span><br><span class="line">  <span class="attr">ethernets:</span></span><br><span class="line">    <span class="attr">ensXXX:</span></span><br><span class="line">      <span class="attr">dhcp4:</span> <span class="literal">no</span> <span class="comment"># 不需要 DHCP 配給 IPv4 位址可加入這行</span></span><br><span class="line">      <span class="attr">addresses:</span> [<span class="string">&lt;你的固定</span> <span class="string">IP</span> <span class="string">位址&gt;/&lt;遮罩位數&gt;</span>]</span><br><span class="line">      <span class="attr">gateway4:</span> <span class="string">&lt;Gateway</span> <span class="string">IP</span> <span class="string">位址&gt;</span></span><br><span class="line">      <span class="attr">nameservers:</span> [<span class="string">&lt;DNS</span> <span class="string">IP</span> <span class="string">位址&gt;</span>]</span><br><span class="line"></span><br></pre></td></tr></table></figure>
-<p>接著輸入以下指令套用變更。</p>
-<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">sudo netplan try</span><br></pre></td></tr></table></figure>
-<p>這時便可以再執行 <code>ip a</code> 確認結果。</p>
-]]></content>
-      <categories>
-        <category>Linux 筆記</category>
-      </categories>
-      <tags>
-        <tag>linux</tag>
-        <tag>ubuntu</tag>
       </tags>
   </entry>
 </search>
