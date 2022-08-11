@@ -1,7 +1,10 @@
 ---
 title: 從 CentOS 7 升級遷移到 Rocky Linux 8
-categories: DevOps筆記
-tags: linux,centos,rocky-linux
+categories: Linux 筆記
+tags: 
+  - linux
+  - centos
+  - rocky-linux
 date: 2022-08-01 09:20:52
 ---
 
