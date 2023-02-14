@@ -1,13 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <search>
   <entry>
-    <title>GitLab pg_dump server version mixmatch 問題解決方法</title>
+    <title>GitLab pg_dump server version mismatch 問題解決方法</title>
     <url>/2023/02/14/GitLab-pg-dump-server-mismatch-%E5%95%8F%E9%A1%8C%E8%A7%A3%E6%B1%BA%E6%96%B9%E6%B3%95/</url>
     <content><![CDATA[<p>在 gitlab.rb 中，可以透過調整 db 相關參數，讓 GitLab 使用外部的 PostgreSQL 資料庫伺服器儲存資料。不過，日後需要對 GitLab 製作備份時，由於 <code>pg_dump</code> 會要求使用的版本與伺服器相同，可能會因為 postgres 版本不同而遇到 server version mixmatch 的錯誤。</p>
+<span id="more"></span>
 <p>首先可以在以下網址查看 GitLab 各版本附帶的 postgres 版本：</p>
 <p><a href="https://docs.gitlab.com/ee/administration/package_information/postgresql_versions.html">https://docs.gitlab.com/ee/administration/package_information/postgresql_versions.html</a></p>
 <p>其中目前最新 GitLab 版本 (15.8) 只有附 12.12 和 13.8 版本的 postgres 程式。也就是說，如果外部 postgres 資料庫的版本在 14 以上，進行備份時便會遇到版本不合的問題。解決方法之一是透過在 GitLab 機器上安裝與 postgres 伺服器版本相同的客戶端。</p>
-<p>以下以 GitLab 安裝在 Ubuntu 20.04 機器上，欲連接 postgres 版本 14 為例。如果 Ubuntu 版本不是 20.04 (Focal)，須將 <code>focal</code> 改為您使用版本的對應代號。</p>
+<p>以下以 GitLab 安裝在 Ubuntu 20.04 機器上，欲連接 postgres 版本 14 為例。</p>
+<ul>
+<li>如果 Ubuntu 版本不是 20.04 (Focal)，須將 <code>focal</code> 改為您使用版本的對應代號。</li>
+<li>如果 postgresql 版本不是 14，須將 <code>14</code> 改為您使用的版本號</li>
+</ul>
 <figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">sh -c <span class="string">&#x27;echo &quot;deb http://apt.postgresql.org/pub/repos/apt focal-pgdg main&quot; &gt; /etc/apt/sources.list.d/pgdg.list&#x27;</span></span><br><span class="line"></span><br><span class="line">wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | apt-key add -</span><br><span class="line"></span><br><span class="line">apt install postgresql-client-14</span><br></pre></td></tr></table></figure>
 <p>之後在 gitlab-backup 所在目錄 <code>/opt/gitlab/bin</code> 建立目標版本 pg_dump 和 psql 的連結，gitlab-backup 便會優先使用我們放在該目錄的連結。</p>
 <figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="built_in">ln</span> -s /usr/lib/postgresql/14/bin/pg_dump /usr/lib/postgresql/14/bin/psql /opt/gitlab/bin/</span><br></pre></td></tr></table></figure>
