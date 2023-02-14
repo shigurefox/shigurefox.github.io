@@ -201,7 +201,7 @@ openssl req -x509 -new -nodes -sha256 -utf8 -days 3650 -newkey rsa:2048 -keyout 
 預設管理員帳號為 `root`，密碼則存在 `gitlab_data/config/initial_root_password` 檔案內，建議登入後點選左上角 `Menu`
 &rarr; `Admin` &rarr; `new user` 創建自己的管理員帳號[^1][^2]，並透過確認信所附的連結設定密碼及啟用。
 
-![創建使用者畫面](gitlab-docker-runner-ci-tutorial/image01.png)
+![創建使用者畫面](gitlab-docker-runner-ci/image01.png)
 
 [^1]: 如果建立帳號後沒有收到確認信，請檢查您的 SMTP 設定。
 [^2]: 管理員帳號的 Access level 記得選擇 Administrator。
@@ -244,7 +244,7 @@ ssh-keygen -t ed25519 -C '<comment>'
 
 點選畫面右上角個人圖示 &rarr; `Preferences`，再點擊畫面左方列表 `SSH Keys`，將剛才複製的 SSH Key 貼到Key欄位，可一併設定有效期限，最後點擊 `Add key`。
 
-![SSH Key 設定畫面](gitlab-docker-runner-ci-tutorial/image02.png)
+![SSH Key 設定畫面](gitlab-docker-runner-ci/image02.png)
 
 ### 設定 git remote 及創建 GitLab project
 

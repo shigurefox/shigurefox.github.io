@@ -192,10 +192,13 @@ openssl req -x509 -new -nodes -sha256 -utf8 -days 3650 -newkey rsa:2048 -keyout 
 預設管理員帳號為 `root`，密碼則存在 `gitlab/config/initial_root_password` 檔案內，建議登入後點選左上角 `Menu`
 &rarr; `Admin` &rarr; `new user` 創建自己的管理員帳號[^1][^2]，並透過確認信所附的連結設定密碼及啟用。
 
-![創建使用者畫面](Rocky-Linux-GitLab-GitLab-Runner-GitLab-CI-建置教學/image01.png)
+![創建使用者畫面](rocky-linux-gitlab-ci/image01.png)
 
-[^1]: 如果建立帳號後沒有收到確認信，請檢查您的 SMTP 設定。
-[^2]: 管理員帳號的 Access level 記得選擇 Administrator。
+> **NOTE**:  
+> 如果建立帳號後沒有收到確認信，請檢查您的 SMTP 設定。  
+> 管理員帳號的 Access level 記得選擇 Administrator。
+
+:::
 
 ### 創建 Project
 
@@ -215,7 +218,7 @@ openssl req -x509 -new -nodes -sha256 -utf8 -days 3650 -newkey rsa:2048 -keyout 
 
 ### 設定 SSH Key
 
-開啟開發環境的 `~/.ssh` 目錄下的 ssh public key 檔案（如 `id_rsa.pub` 或 `id_ed25519.pub`），複製其中內容[^3]。
+開啟開發環境的 `~/.ssh` 目錄下的 ssh public key 檔案（如 `id_rsa.pub` 或 `id_ed25519.pub`），複製其中內容。
 
 如 MacOS 可以使用以下指令：
 
@@ -223,7 +226,7 @@ openssl req -x509 -new -nodes -sha256 -utf8 -days 3650 -newkey rsa:2048 -keyout 
 cat ~/.ssh/id_ed25519.pub | pbcopy
 ```
 
-[^3]: 如果 Host 環境是 VM，需安裝 VMware Tools 或 Guest Additions 等工具。
+> 如果 Host 環境是 VM，可能需要安裝 VMware Tools 或 Guest Additions 等工具才能順利複製。
 
 如果目錄下沒有公鑰檔，可以用以下指令創建：
 
@@ -235,7 +238,7 @@ ssh-keygen -t ed25519 -C '<comment>'
 
 點選畫面右上角個人圖示 &rarr; `Preferences`，再點擊畫面左方列表 `SSH Keys`，將剛才複製的 SSH Key 貼到Key欄位，可一併設定有效期限，最後點擊 `Add key`。
 
-![SSH Key 設定畫面](Rocky-Linux-GitLab-GitLab-Runner-GitLab-CI-建置教學/image02.png)
+![SSH Key 設定畫面](rocky-linux-gitlab-ci/image02.png)
 
 ### 設定 git remote 及創建 GitLab project
 
@@ -295,9 +298,9 @@ podman exec -it gitlab-runner gitlab-runner register --tls-ca-file /etc/gitlab-r
 
 ### 撰寫 GitLab CI 腳本
 
-依照官方提供範例[^4]在專案資料夾根目錄創建並編輯 `.gitlab-ci.yml`。
+依照官方提供範例在專案資料夾根目錄創建並編輯 `.gitlab-ci.yml`。
 
-[^4]: [GitLab CI 模板撰寫指南](https://docs.gitlab.com/ee/development/cicd/templates.html)
+> [GitLab CI 模板撰寫指南](https://docs.gitlab.com/ee/development/cicd/templates.html)
 
 ```yaml
 stages:          # List of stages for jobs, and their order of execution

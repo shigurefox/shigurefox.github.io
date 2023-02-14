@@ -8,8 +8,14 @@ subtitle:
 description: 'Data Engineer / Open Source Enthusiast.'
 keywords:
 author: Shigurefox
-language: zh-TW
+# hexo default is empty, change to exact languages, and add xx.yml under your theme languages dir.
+language: [zh-TW, en]
 timezone: 'Asia/Taipei'
+
+# config hexo-generator-i18n option (optional, this is default option)
+i18n:
+  type: [page, post]
+  generator: [archive, category, tag, index]
 
 # URL
 ## Set your site url here. For example, if you use GitHub Page, set url as 'https://username.github.io/project'
@@ -163,4 +169,4 @@ markdown:
     permalink: true
     permalinkClass: header-anchor
     permalinkSymbol: ''
-    
+ 
