@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 6.3.0">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <link rel="manifest" href="/images/site.webmanifest">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.1/css/all.min.css" integrity="sha256-Z1K5uhUaJXA7Ll0XrZ/0JhX4lAtZFpT6jkKrEDT0drU=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/fancybox/3.5.7/jquery.fancybox.min.css" integrity="sha256-Vzbj7sDDS/woiFS3uNKo8eIuni59rjyNGtXfstRzStA=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"shigurefox.github.io","root":"/","images":"/images","scheme":"Gemini","darkmode":false,"version":"8.14.2","exturl":false,"sidebar":{"position":"right","display":"post","padding":18,"offset":12},"copycode":{"enable":false,"style":null},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"Searching...","empty":"We didn't find any results for the search: ${query}","hits_time":"${hits} results found in ${time} ms","hits":"${hits} results found"},"path":"/search.xml","localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false}}</script><script src="/js/config.js"></script>
+
+    <meta name="description" content="本文示範如何在 Rocky Linux 於內部網路自行架設 GitLab 及 GitLab Runner 服務，並將 GitLab 加入 git remote，最後撰寫 .gitlab-ci.yml，透過 GitLab Runner 在 git push 時自動執行 CI 腳本。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Rocky Linux GitLab + GitLab Runner + GitLab CI 建置教學">
+<meta property="og:url" content="https://shigurefox.github.io/en/2022/07/21/rocky-linux-gitlab-ci/">
+<meta property="og:site_name" content="Shigurefox&#39;s Den">
+<meta property="og:description" content="本文示範如何在 Rocky Linux 於內部網路自行架設 GitLab 及 GitLab Runner 服務，並將 GitLab 加入 git remote，最後撰寫 .gitlab-ci.yml，透過 GitLab Runner 在 git push 時自動執行 CI 腳本。">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://shigurefox.github.io/2022/07/21/rocky-linux-gitlab-ci/image01.png">
+<meta property="og:image" content="https://shigurefox.github.io/2022/07/21/rocky-linux-gitlab-ci/image02.png">
+<meta property="article:published_time" content="2022-07-21T07:37:53.000Z">
+<meta property="article:modified_time" content="2022-08-11T10:28:07.238Z">
+<meta property="article:author" content="Shigurefox">
+<meta property="article:tag" content="linux">
+<meta property="article:tag" content="rocky-linux">
+<meta property="article:tag" content="gitlab">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://shigurefox.github.io/2022/07/21/rocky-linux-gitlab-ci/image01.png">
+
+
+<link rel="canonical" href="https://shigurefox.github.io/en/2022/07/21/rocky-linux-gitlab-ci/">
+
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"en","comments":true,"permalink":"https://shigurefox.github.io/2022/07/21/rocky-linux-gitlab-ci/","path":"en/2022/07/21/rocky-linux-gitlab-ci/","title":"Rocky Linux GitLab + GitLab Runner + GitLab CI 建置教學"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>Rocky Linux GitLab + GitLab Runner + GitLab CI 建置教學 | Shigurefox's Den</title>
+  
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-4DZZM5536W"></script>
+  <script class="next-config" data-name="google_analytics" type="application/json">{"tracking_id":"G-4DZZM5536W","only_pageview":false}</script>
+  <script src="/js/third-party/analytics/google-analytics.js"></script>
+
+
+
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">Shigurefox's Den</p>
+      <i class="logo-line"></i>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="Search" role="button">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a></li><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>About</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>Tags</a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>Categories</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a></li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>Search
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup"><div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off" maxlength="80"
+           placeholder="Searching..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close" role="button">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div class="search-result-container no-result">
+  <div class="search-result-icon">
+    <i class="fa fa-spinner fa-pulse fa-5x"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%A8%AD%E5%AE%9A-Host-%E7%92%B0%E5%A2%83"><span class="nav-number">1.</span> <span class="nav-text">設定 Host 環境</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%B7%A8%E8%BC%AF-sshd-config"><span class="nav-number">1.1.</span> <span class="nav-text">編輯 sshd_config</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%A8%AD%E5%AE%9A%E9%98%B2%E7%81%AB%E7%89%86"><span class="nav-number">1.2.</span> <span class="nav-text">設定防火牆</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BD%BF%E7%94%A8-Podman-%E5%BB%BA%E7%BD%AE-GitLab"><span class="nav-number">2.</span> <span class="nav-text">使用 Podman 建置 GitLab</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AE%89%E8%A3%9D-Podman"><span class="nav-number">2.1.</span> <span class="nav-text">安裝 Podman</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%87%AA%E7%B0%BD%E6%86%91%E8%AD%89%E8%99%95%E7%90%86"><span class="nav-number">3.</span> <span class="nav-text">自簽憑證處理</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%A8%AD%E5%AE%9A-GitLab"><span class="nav-number">4.</span> <span class="nav-text">設定 GitLab</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%89%B5%E5%BB%BA%E7%AE%A1%E7%90%86%E5%93%A1%E5%B8%B3%E8%99%9F"><span class="nav-number">4.1.</span> <span class="nav-text">創建管理員帳號</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%89%B5%E5%BB%BA-Project"><span class="nav-number">4.2.</span> <span class="nav-text">創建 Project</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%B0%87-GitLab-%E5%8A%A0%E5%85%A5%E9%96%8B%E7%99%BC%E7%92%B0%E5%A2%83"><span class="nav-number">5.</span> <span class="nav-text">將 GitLab 加入開發環境</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%A8%AD%E5%AE%9A-SSH-Key"><span class="nav-number">5.1.</span> <span class="nav-text">設定 SSH Key</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%A8%AD%E5%AE%9A-git-remote-%E5%8F%8A%E5%89%B5%E5%BB%BA-GitLab-project"><span class="nav-number">5.2.</span> <span class="nav-text">設定 git remote 及創建 GitLab project</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%BB%BA%E7%BD%AE-GitLab-Runner"><span class="nav-number">6.</span> <span class="nav-text">建置 GitLab Runner</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%B7%A8%E8%BC%AF-docker-compose-%E8%A8%AD%E5%AE%9A%E6%AA%94"><span class="nav-number">6.1.</span> <span class="nav-text">編輯 docker-compose 設定檔</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%A8%BB%E5%86%8A-GitLab-Runner"><span class="nav-number">6.2.</span> <span class="nav-text">註冊 GitLab Runner</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%92%B0%E5%AF%AB-GitLab-CI-%E8%85%B3%E6%9C%AC"><span class="nav-number">6.3.</span> <span class="nav-text">撰寫 GitLab CI 腳本</span></a></li></ol></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="Shigurefox"
+      src="/images/shigurefox.jpg">
+  <p class="site-author-name" itemprop="name">Shigurefox</p>
+  <div class="site-description" itemprop="description">Data Engineer / Open Source Enthusiast.</div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">8</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+          <a href="/categories/">
+        <span class="site-state-item-count">2</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/tags/">
+        <span class="site-state-item-count">10</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author animated">
+      <span class="links-of-author-item">
+        <a href="https://github.com/shigurefox" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;shigurefox" rel="noopener me" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:shigurefox@gmail.com" title="E-Mail → mailto:shigurefox@gmail.com" rel="noopener me" target="_blank"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+  </div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="en">
+    <link itemprop="mainEntityOfPage" href="https://shigurefox.github.io/2022/07/21/rocky-linux-gitlab-ci/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/shigurefox.jpg">
+      <meta itemprop="name" content="Shigurefox">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Shigurefox's Den">
+      <meta itemprop="description" content="Data Engineer / Open Source Enthusiast.">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="Rocky Linux GitLab + GitLab Runner + GitLab CI 建置教學 | Shigurefox's Den">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Rocky Linux GitLab + GitLab Runner + GitLab CI 建置教學
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2022-07-21 15:37:53" itemprop="dateCreated datePublished" datetime="2022-07-21T15:37:53+08:00">2022-07-21</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">Edited on</span>
+      <time title="Modified: 2022-08-11 18:28:07" itemprop="dateModified" datetime="2022-08-11T18:28:07+08:00">2022-08-11</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">In</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/DevOps-%E7%AD%86%E8%A8%98/" itemprop="url" rel="index"><span itemprop="name">DevOps 筆記</span></a>
+        </span>
+    </span>
+
+  
+    <span class="post-meta-break"></span>
+    <span class="post-meta-item" title="Word count in article">
+      <span class="post-meta-item-icon">
+        <i class="far fa-file-word"></i>
+      </span>
+      <span class="post-meta-item-text">Word count in article: </span>
+      <span>6.1k</span>
+    </span>
+    <span class="post-meta-item" title="Reading time">
+      <span class="post-meta-item-icon">
+        <i class="far fa-clock"></i>
+      </span>
+      <span class="post-meta-item-text">Reading time &asymp;</span>
+      <span>6 mins.</span>
+    </span>
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+        <p>本文示範如何在 Rocky Linux 於內部網路自行架設 GitLab 及 GitLab Runner 服務，並將 GitLab 加入 git remote，最後撰寫 <code>.gitlab-ci.yml</code>，透過 GitLab Runner 在 git push 時自動執行 CI 腳本。</p>
+<span id="more"></span>
+<hr>
+<h2 id="設定-Host-環境"><a class="header-anchor" href="#設定-Host-環境"></a>設定 Host 環境</h2>
+<h3 id="編輯-sshd-config"><a class="header-anchor" href="#編輯-sshd-config"></a>編輯 <code>sshd_config</code></h3>
+<p>透過編輯 <code>/etc/ssh/sshd_config</code> 檔案來更改 Host 系統使用的 <code>ssh</code> port，避免後續透過 <code>ssh</code> 與 GitLab 互動時會與系統衝突， <code>AddressFamily</code> 改為 <code>inet</code> 表示僅允許透過 ipv4 連線</p>
+<figure class="highlight diff"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="deletion">- Port 22</span></span><br><span class="line"><span class="addition">+ Port 2222</span></span><br><span class="line"><span class="deletion">- AddressFamily any</span></span><br><span class="line"><span class="addition">+ AddressFamily inet</span></span><br></pre></td></tr></table></figure>
+<ul>
+<li>可以先加上 port 2222，確定可以用 port 2222 進行 <code>ssh</code> 連線後，再刪除 port 22 這行</li>
+</ul>
+<p>接著透過 <code>semanage</code> 將 port 2222 加入 ssh 使用的 port 清單後重啟 sshd</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">semanage port -a -t ssh_port_t -p tcp 2222</span><br><span class="line">semanage port -l | grep ssh</span><br><span class="line">systemctl restart sshd</span><br></pre></td></tr></table></figure>
+<p>如果出現 <code>semanage: command not found</code> 錯誤，表示系統未安裝此工具程式，可透過以下指令安裝解決</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">dnf install -y policycoreutils</span><br></pre></td></tr></table></figure>
+<h3 id="設定防火牆"><a class="header-anchor" href="#設定防火牆"></a>設定防火牆</h3>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">firewall-cmd --add-port=2222/tcp --permanent</span><br><span class="line">firewall-cmd --add-port=443/tcp --permanent</span><br><span class="line">firewall-cmd --reload</span><br></pre></td></tr></table></figure>
+<hr>
+<h2 id="使用-Podman-建置-GitLab"><a class="header-anchor" href="#使用-Podman-建置-GitLab"></a>使用 Podman 建置 GitLab</h2>
+<h3 id="安裝-Podman"><a class="header-anchor" href="#安裝-Podman"></a>安裝 Podman</h3>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo dnf install podman</span><br></pre></td></tr></table></figure>
+<p>確認已安裝 podman 版本</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">podman version</span><br></pre></td></tr></table></figure>
+<p>在任意目錄如 <code>/srv/gitlab/</code> 下建立並編輯 <code>docker-comose.yml</code></p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">version:</span> <span class="string">&#x27;3.6&#x27;</span></span><br><span class="line"><span class="attr">services:</span></span><br><span class="line">  <span class="attr">web:</span></span><br><span class="line">    <span class="attr">image:</span> <span class="string">gitlab/gitlab-ee:latest</span></span><br><span class="line">    <span class="attr">container_name:</span> <span class="string">gitlab</span></span><br><span class="line">    <span class="attr">restart:</span> <span class="string">always</span></span><br><span class="line">    <span class="attr">hostname:</span> <span class="string">&#x27;gitlab&#x27;</span></span><br><span class="line">    <span class="attr">privileged:</span> <span class="literal">true</span></span><br><span class="line">    <span class="attr">environment:</span></span><br><span class="line">      <span class="attr">GITLAB_OMNIBUS_CONFIG:</span> <span class="string">|</span></span><br><span class="line"><span class="string">        external_url &#x27;https://gitlab&#x27;</span></span><br><span class="line"><span class="string">        # SMTP server 設定</span></span><br><span class="line"><span class="string">        gitlab_rails[&#x27;gitlab_shell_ssh_port&#x27;] = 22</span></span><br><span class="line"><span class="string">        gitlab_rails[&#x27;smtp_enable&#x27;] = true</span></span><br><span class="line"><span class="string">        gitlab_rails[&#x27;smtp_address&#x27;] = &#x27;&lt;smtp server url&gt;&#x27;</span></span><br><span class="line"><span class="string">        gitlab_rails[&#x27;smtp_port&#x27;] = 587</span></span><br><span class="line"><span class="string">        gitlab_rails[&#x27;smtp_domain&#x27;] = &#x27;&lt;smtp server domain name&gt;&#x27;</span></span><br><span class="line"><span class="string">        gitlab_rails[&#x27;smtp_user_name&#x27;] = &quot;&lt;smtp username&gt;&quot;</span></span><br><span class="line"><span class="string">        gitlab_rails[&#x27;smtp_password&#x27;] = &quot;&lt;smtp password&gt;&quot;</span></span><br><span class="line"><span class="string">        gitlab_rails[&#x27;smtp_authentication&#x27;] = &#x27;login&#x27;</span></span><br><span class="line"><span class="string">        gitlab_rails[&#x27;gitlab_email_from&#x27;] = &#x27;noreply@my-gitlab&#x27;</span></span><br><span class="line"><span class="string">        gitlab_rails[&#x27;gitlab_email_reply_to&#x27;] = &#x27;root@my-gitlab&#x27;</span></span><br><span class="line"><span class="string">        gitlab_rails[&#x27;smtp_enable_starttls_auto&#x27;] = true</span></span><br><span class="line"><span class="string">        gitlab_rails[&#x27;smtp_tls&#x27;] = false</span></span><br><span class="line"><span class="string">        gitlab_rails[&#x27;smtp_pool&#x27;] = false</span></span><br><span class="line"><span class="string"></span>    <span class="attr">ports:</span></span><br><span class="line">      <span class="bullet">-</span> <span class="string">&#x27;80:80&#x27;</span></span><br><span class="line">      <span class="bullet">-</span> <span class="string">&#x27;443:443&#x27;</span></span><br><span class="line">      <span class="bullet">-</span> <span class="string">&#x27;22:22&#x27;</span></span><br><span class="line">    <span class="attr">volumes:</span></span><br><span class="line">      <span class="bullet">-</span> <span class="string">&#x27;./gitlab/config:/etc/gitlab:Z&#x27;</span></span><br><span class="line">      <span class="bullet">-</span> <span class="string">&#x27;./gitlab/logs:/var/log/gitlab:Z&#x27;</span></span><br><span class="line">      <span class="bullet">-</span> <span class="string">&#x27;./gitlab/data:/var/opt/gitlab:Z&#x27;</span></span><br><span class="line">    <span class="attr">shm_size:</span> <span class="string">&#x27;256m&#x27;</span></span><br></pre></td></tr></table></figure>
+<ul>
+<li>需要在 volume 對應的容器路徑後面加上 <code>:Z</code> 以讓容器有權限寫入</li>
+</ul>
+<p>接著用以下指令啟動容器</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">podman compose up -d</span><br></pre></td></tr></table></figure>
+<ul>
+<li>-d: 表示在背景執行</li>
+</ul>
+<p>查看容器 log</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">podman logs -f gitlab</span><br></pre></td></tr></table></figure>
+<ul>
+<li>-f (–follow): 表示追蹤並即時印出新的log</li>
+</ul>
+<p>日後如果要更改設定，可以選擇透過在 <code>GITLAB_OMNIBUS_CONFIG</code> 下修改後重上容器，或直接編輯 <code>gitlab_data/config/gitlab.rb</code> 做修改</p>
+<p>編輯完畢後執行</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">podman <span class="built_in">exec</span> -it gitlab gitlab-ctl reconfigure</span><br></pre></td></tr></table></figure>
+<hr>
+<h2 id="自簽憑證處理"><a class="header-anchor" href="#自簽憑證處理"></a>自簽憑證處理</h2>
+<p>在透過 Omnibus 設定建立的 GitLab 容器，預設會透過 Let’s Encrypt 產生自簽憑證，後續註冊 GitLab Runner 時可能會遇到 <code>x509: certificate relies on legacy Common Name field, use SANs instead</code> 的問題，這是由於自動產生的憑證缺少 SAN 欄位，需要重新簽署帶有 SAN (Subject Alternative Names) 欄位設定的憑證。</p>
+<p>建立並編輯 <code>gitlab_data/config/ssl/ssl.conf</code></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line">[req]</span><br><span class="line">prompt = no</span><br><span class="line">default_md = sha256</span><br><span class="line">default_bits = 2048</span><br><span class="line">distinguished_name = dn</span><br><span class="line">x509_extensions = v3_req</span><br><span class="line"></span><br><span class="line">[dn]</span><br><span class="line">[req]</span><br><span class="line">prompt = no</span><br><span class="line">default_md = sha256</span><br><span class="line">default_bits = 2048</span><br><span class="line">distinguished_name = dn</span><br><span class="line">x509_extensions = v3_req</span><br><span class="line"></span><br><span class="line">[dn]</span><br><span class="line">C = TW</span><br><span class="line">ST = Taiwan</span><br><span class="line">L = Taipei</span><br><span class="line">O = gitlab Inc.</span><br><span class="line">OU = IT Department</span><br><span class="line">emailAddress = &lt;YOUR EMAIL&gt;</span><br><span class="line">CN = gitlab</span><br><span class="line"></span><br><span class="line">[v3_req]</span><br><span class="line">subjectAltName = @alt_names</span><br><span class="line"></span><br><span class="line">[alt_names]</span><br><span class="line">DNS.1 = gitlab</span><br><span class="line">DNS.2 = *.gitlab</span><br><span class="line">IP.1  = &lt;YOUR SERVER IP&gt;</span><br></pre></td></tr></table></figure>
+<p>由以下指令產生新憑證</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">openssl req -x509 -new -nodes -sha256 -utf8 -days 3650 -newkey rsa:2048 -keyout gitlab.key -out gitlab.crt -config ssl.conf</span><br></pre></td></tr></table></figure>
+<p>憑證公私鑰檔名應該與 <code>docker-compose.yml</code> 中的 <code>external_url</code> 設定一致。</p>
+<hr>
+<h2 id="設定-GitLab"><a class="header-anchor" href="#設定-GitLab"></a>設定 GitLab</h2>
+<h3 id="創建管理員帳號"><a class="header-anchor" href="#創建管理員帳號"></a>創建管理員帳號</h3>
+<p>預設管理員帳號為 <code>root</code>，密碼則存在 <code>gitlab/config/initial_root_password</code> 檔案內，建議登入後點選左上角 <code>Menu</code><br>
+→ <code>Admin</code> → <code>new user</code> 創建自己的管理員帳號[<sup>1][</sup>2]，並透過確認信所附的連結設定密碼及啟用。</p>
+<p><img src="/2022/07/21/rocky-linux-gitlab-ci/image01.png" alt="創建使用者畫面"></p>
+<blockquote>
+<p><strong>NOTE</strong>:<br>
+如果建立帳號後沒有收到確認信，請檢查您的 SMTP 設定。<br>
+管理員帳號的 Access level 記得選擇 Administrator。</p>
+</blockquote>
+<p>:::</p>
+<h3 id="創建-Project"><a class="header-anchor" href="#創建-Project"></a>創建 Project</h3>
+<p>有以下幾種做法：</p>
+<ul>
+<li>從 GitLab 網頁 UI 建立空白 Project</li>
+<li>使用本地 git repo 創建</li>
+<li>從 GitHub 等外部 repo 匯入</li>
+</ul>
+<p>本文以使用本地 git repo 做為示範，詳見下段。</p>
+<hr>
+<h2 id="將-GitLab-加入開發環境"><a class="header-anchor" href="#將-GitLab-加入開發環境"></a>將 GitLab 加入開發環境</h2>
+<p>由於是架設在內部網路，建議操作 git 使用 <code>ssh</code> 而不用 <code>https</code> ，可以避開很多TLS 憑證衍生錯誤問題。</p>
+<h3 id="設定-SSH-Key"><a class="header-anchor" href="#設定-SSH-Key"></a>設定 SSH Key</h3>
+<p>開啟開發環境的 <code>~/.ssh</code> 目錄下的 ssh public key 檔案（如 <code>id_rsa.pub</code> 或 <code>id_ed25519.pub</code>），複製其中內容。</p>
+<p>如 MacOS 可以使用以下指令：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">cat</span> ~/.ssh/id_ed25519.pub | pbcopy</span><br></pre></td></tr></table></figure>
+<blockquote>
+<p>如果 Host 環境是 VM，可能需要安裝 VMware Tools 或 Guest Additions 等工具才能順利複製。</p>
+</blockquote>
+<p>如果目錄下沒有公鑰檔，可以用以下指令創建：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ssh-keygen -t ed25519 -C <span class="string">&#x27;&lt;comment&gt;&#x27;</span></span><br></pre></td></tr></table></figure>
+<ul>
+<li>其中 -C 標示該 key 的使用者資訊，通常會是 <code>&lt;username&gt;@&lt;hostname&gt;.&lt;domain&gt;</code> ，或是使用者的 email address</li>
+</ul>
+<p>點選畫面右上角個人圖示 → <code>Preferences</code>，再點擊畫面左方列表 <code>SSH Keys</code>，將剛才複製的 SSH Key 貼到Key欄位，可一併設定有效期限，最後點擊 <code>Add key</code>。</p>
+<p><img src="/2022/07/21/rocky-linux-gitlab-ci/image02.png" alt="SSH Key 設定畫面"></p>
+<h3 id="設定-git-remote-及創建-GitLab-project"><a class="header-anchor" href="#設定-git-remote-及創建-GitLab-project"></a>設定 git remote 及創建 GitLab project</h3>
+<p>以既有本地檔案初始化 git 並創建 GitLab project</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">cd</span> &lt;project_folder&gt;</span><br><span class="line">git init --initial-branch=main</span><br><span class="line">git remote add origin git@&lt;GitLab URL&gt;:&lt;username&gt;/&lt;your repo name&gt;.git</span><br><span class="line">git add .</span><br><span class="line">git commit -m <span class="string">&quot;Initial commit&quot;</span></span><br><span class="line">git push -u origin main</span><br></pre></td></tr></table></figure>
+<hr>
+<h2 id="建置-GitLab-Runner"><a class="header-anchor" href="#建置-GitLab-Runner"></a>建置 GitLab Runner</h2>
+<h3 id="編輯-docker-compose-設定檔"><a class="header-anchor" href="#編輯-docker-compose-設定檔"></a>編輯 docker-compose 設定檔</h3>
+<p>在 <code>docker-compose.yml</code> 中加入以下段落：</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">gitlab-runner:</span></span><br><span class="line">  <span class="attr">image:</span> <span class="string">gitlab/gitlab-runner:latest</span></span><br><span class="line">  <span class="attr">container_name:</span> <span class="string">&#x27;gitlab-runner&#x27;</span></span><br><span class="line">  <span class="attr">environment:</span></span><br><span class="line">    <span class="bullet">-</span> <span class="string">CI_SERVER_URL=https://gitlab</span></span><br><span class="line">  <span class="attr">volumes:</span></span><br><span class="line">    <span class="bullet">-</span> <span class="string">&#x27;/var/run/docker.sock:/var/run/docker.sock&#x27;</span></span><br><span class="line">    <span class="bullet">-</span> <span class="string">&#x27;./gitlab-runner:/etc/gitlab-runner&#x27;</span></span><br><span class="line">  <span class="attr">restart:</span> <span class="string">always</span></span><br></pre></td></tr></table></figure>
+<p>重新下上容器：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">podman compose down</span><br><span class="line">podman compose up -d</span><br></pre></td></tr></table></figure>
+<p>在註冊 Runner 之前，需要複製一份前面步驟產生的 GitLab server 憑證 <code>gitlab.crt</code> 到 <code>./gitlab-runner/certs/</code> 底下。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">touch</span> ./gitlab-runner/config.toml</span><br><span class="line"><span class="built_in">mkdir</span> ./gitlab-runner/certs</span><br><span class="line"><span class="built_in">cp</span> ./gitlab/config/ssl/gitlab.crt ./gitlab-runner/certs/</span><br></pre></td></tr></table></figure>
+<h3 id="註冊-GitLab-Runner"><a class="header-anchor" href="#註冊-GitLab-Runner"></a>註冊 GitLab Runner</h3>
+<p>在 Project 頁面，點擊畫面左方列表 <code>Settings</code> → <code>CI/CD</code>，再點擊 Runners 右邊的 <code>Expand</code>，複製 <code>registration token</code>。執行以下指令並依提示填入內容。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">podman <span class="built_in">exec</span> -it gitlab-runner gitlab-runner register --tls-ca-file /etc/gitlab-runner/certs/gitlab.crt</span><br></pre></td></tr></table></figure>
+<h3 id="撰寫-GitLab-CI-腳本"><a class="header-anchor" href="#撰寫-GitLab-CI-腳本"></a>撰寫 GitLab CI 腳本</h3>
+<p>依照官方提供範例在專案資料夾根目錄創建並編輯 <code>.gitlab-ci.yml</code>。</p>
+<blockquote>
+<p><a target="_blank" rel="noopener" href="https://docs.gitlab.com/ee/development/cicd/templates.html">GitLab CI 模板撰寫指南</a></p>
+</blockquote>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">stages:</span>          <span class="comment"># List of stages for jobs, and their order of execution</span></span><br><span class="line">  <span class="bullet">-</span> <span class="string">build</span></span><br><span class="line">  <span class="bullet">-</span> <span class="string">test</span></span><br><span class="line">  <span class="bullet">-</span> <span class="string">deploy</span></span><br><span class="line"></span><br><span class="line"><span class="attr">build-job:</span>       <span class="comment"># This job runs in the build stage, which runs first.</span></span><br><span class="line">  <span class="attr">stage:</span> <span class="string">build</span></span><br><span class="line">  <span class="attr">only:</span></span><br><span class="line">    <span class="bullet">-</span> <span class="string">develop</span></span><br><span class="line">  <span class="attr">tags:</span></span><br><span class="line">    <span class="bullet">-</span> <span class="string">&quot;shell&quot;</span></span><br><span class="line">  <span class="attr">script:</span></span><br><span class="line">    <span class="bullet">-</span> <span class="string">echo</span> <span class="string">&quot;Compiling the code...&quot;</span></span><br><span class="line">    <span class="bullet">-</span> <span class="string">echo</span> <span class="string">&quot;Compile complete.&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="attr">unit-test-job:</span>   <span class="comment"># This job runs in the test stage.</span></span><br><span class="line">  <span class="attr">stage:</span> <span class="string">test</span>    <span class="comment"># It only starts when the job in the build stage completes successfully.</span></span><br><span class="line">  <span class="attr">only:</span></span><br><span class="line">    <span class="bullet">-</span> <span class="string">develop</span></span><br><span class="line">  <span class="attr">tags:</span></span><br><span class="line">    <span class="bullet">-</span> <span class="string">&quot;shell&quot;</span></span><br><span class="line">  <span class="attr">script:</span></span><br><span class="line">    <span class="bullet">-</span> <span class="string">echo</span> <span class="string">&quot;Running unit tests... This will take about 60 seconds.&quot;</span></span><br><span class="line">    <span class="bullet">-</span> <span class="string">sleep</span> <span class="number">60</span></span><br><span class="line">    <span class="bullet">-</span> <span class="string">echo</span> <span class="string">&quot;Code coverage is 90%&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="attr">lint-test-job:</span>   <span class="comment"># This job also runs in the test stage.</span></span><br><span class="line">  <span class="attr">stage:</span> <span class="string">test</span>    <span class="comment"># It can run at the same time as unit-test-job (in parallel).</span></span><br><span class="line">  <span class="attr">only:</span></span><br><span class="line">    <span class="bullet">-</span> <span class="string">develop</span></span><br><span class="line">  <span class="attr">tags:</span></span><br><span class="line">    <span class="bullet">-</span> <span class="string">&quot;shell&quot;</span></span><br><span class="line">  <span class="attr">script:</span></span><br><span class="line">    <span class="bullet">-</span> <span class="string">echo</span> <span class="string">&quot;Linting code... This will take about 10 seconds.&quot;</span></span><br><span class="line">    <span class="bullet">-</span> <span class="string">sleep</span> <span class="number">10</span></span><br><span class="line">    <span class="bullet">-</span> <span class="string">echo</span> <span class="string">&quot;No lint issues found.&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="attr">deploy-job:</span>      <span class="comment"># This job runs in the deploy stage.</span></span><br><span class="line">  <span class="attr">stage:</span> <span class="string">deploy</span>  <span class="comment"># It only runs when *both* jobs in the test stage complete successfully.</span></span><br><span class="line">  <span class="attr">only:</span></span><br><span class="line">    <span class="bullet">-</span> <span class="string">develop</span></span><br><span class="line">  <span class="attr">tags:</span></span><br><span class="line">    <span class="bullet">-</span> <span class="string">&quot;shell&quot;</span></span><br><span class="line">  <span class="attr">script:</span></span><br><span class="line">    <span class="bullet">-</span> <span class="string">echo</span> <span class="string">&quot;Deploying application...&quot;</span></span><br><span class="line">    <span class="bullet">-</span> <span class="string">echo</span> <span class="string">&quot;Application successfully deployed.&quot;</span></span><br></pre></td></tr></table></figure>
+<p>之後做 <code>git push</code>，GitLab 便會自動用前面註冊的 runner 配對執行 CI jobs。之後可以在側邊欄 <code>CI/CD</code> 選單查看測試結果。</p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/linux/" rel="tag"># linux</a>
+              <a href="/tags/rocky-linux/" rel="tag"># rocky-linux</a>
+              <a href="/tags/gitlab/" rel="tag"># gitlab</a>
+          </div>
+
+        
+  <div class="addthis_inline_share_toolbox social-like">
+    <script src="//s7.addthis.com/js/300/addthis_widget.js#pubid=ra-62f37c6cb9086e79" async="async"></script>
+  </div>
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2022/07/18/gitlab-docker-runner-ci/" rel="prev" title="CentOS 7 GitLab + GitLab Runner + GitLab CI 建置教學">
+                  <i class="fa fa-chevron-left"></i> CentOS 7 GitLab + GitLab Runner + GitLab CI 建置教學
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2022/08/01/Upgrade-from-CentOS-7-to-Rocky-Linux/" rel="next" title="從 CentOS 7 升級遷移到 Rocky Linux 8">
+                  從 CentOS 7 升級遷移到 Rocky Linux 8 <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+    <div class="comments utterances-container"></div>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+
+<div class="copyright">
+  &copy; 2022 – 
+  <span itemprop="copyrightYear">2023</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Shigurefox</span>
+</div>
+<div class="wordcount">
+  <span class="post-meta-item">
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-line"></i>
+    </span>
+    <span title="Word count total">19k</span>
+  </span>
+  <span class="post-meta-item">
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+    <span title="Reading time total">17 mins.</span>
+  </span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/" rel="noopener" target="_blank">NexT.Gemini</a>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="back-to-top" role="button" aria-label="Back to top">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.3/jquery.min.js" integrity="sha256-pvPw+upLPUjgMXY0G+8O0xUf+/Im1MZjXxxgOcBQBXU=" crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/fancybox/3.5.7/jquery.fancybox.min.js" integrity="sha256-yt2kYMy0w8AbtF89WXb2P1rfjcP/HTHLT7097U8Y5b8=" crossorigin="anonymous"></script>
+<script src="/js/comments.js"></script><script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/next-boot.js"></script>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/hexo-generator-searchdb/1.4.1/search.js" integrity="sha256-1kfA5uHPf65M5cphT2dvymhkuyHPQp5A53EGZOnOLmc=" crossorigin="anonymous"></script>
+<script src="/js/third-party/search/local-search.js"></script>
+
+
+
+  <script src="/js/third-party/fancybox.js"></script>
+
+
+  
+
+
+
+
+<script class="next-config" data-name="utterances" type="application/json">{"enable":true,"repo":"shigurefox/shigurefox.github.io","issue_term":"title","theme":"github-light"}</script>
+<script src="/js/third-party/comments/utterances.js"></script>
+
+</body>
+</html>
